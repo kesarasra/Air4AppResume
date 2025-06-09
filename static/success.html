@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Step 2: Location</title>
+  <link rel="stylesheet" href="styles/style.css" />
+</head>
+<body>
+  <main class="container">
+  <h1>Success!</h1>
+<p>Your activity has been recorded.</p>
+<div class="btn-group">
+  <button onclick="addAnother()">Add Another Activity</button>
+  <button onclick="exitForm()">Exit</button>
+</div>
+</main>
+
+<script src="scripts/utils.js"></script>
+<script>
+  function addAnother() {
+    // Keep workerName and logDate
+    const worker = getFromSession('workerName');
+    const date = getFromSession('logDate');
+
+    sessionStorage.clear();
+    saveToSession('workerName', worker);
+    saveToSession('logDate', date);
+
+    // Go back to location step
+    window.location.href = 'location.html';
+  }
+
+  function exitForm() {
+    sessionStorage.clear();
+    window.location.href = 'index.html';
+  }
+</script>

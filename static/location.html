@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Step 2: Location</title>
+  <link rel="stylesheet" href="styles/style.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Select Work Location</h1>
+    <form id="location-form">
+      <label for="phase">Phase #</label>
+      <select id="phase">
+        <option value="">-- Select Phase --</option>
+      </select>
+
+      <label for="zone">Zone #</label>
+      <select id="zone">
+        <option value="">-- Select Zone --</option>
+      </select>
+
+      <label for="line">Line #</label>
+      <input type="text" id="line" />
+
+      <label for="treeID">Tree ID</label>
+      <input type="text" id="treeID" />
+
+      <div class="btn-group">
+        <button type="button" onclick="goBack('index.html')">Previous</button>
+        <button type="submit" class="cta">Next</button>
+      </div>
+    </form>
+  </main>
+  <script src="scripts/utils.js"></script>
+  <script src="scripts/location.js"></script>
+</body>
+</html>

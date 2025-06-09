@@ -1,0 +1,126 @@
+:root {
+  --primary: #D36F3F;
+  --secondary: #BFA2DB;
+  --highlight: #D6A700;
+  --background: #B2C8BA;
+  --hover: #A8DADC;
+  --text-dark: #333;
+  --text-light: #EEE;
+}
+
+body {
+  background-color: #D36F3F;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  color: #333;
+}
+
+.container {
+  max-width: 500px;
+  margin: 50px auto;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+h1 {
+  color: #E2725B;
+}
+
+label {
+  display: block;
+  margin-top: 15px;
+}
+
+input, select {
+  width: 100%;
+  max-width: 100%; 
+  box-sizing: border-box;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 6px;
+  border: 2px solid #ccc;
+}
+
+.cta {
+  background-color: #8a759e;
+  color: #fff;
+  font-weight: bold;
+  padding: 10px 15px;
+  border: none;
+  margin-top: 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.cta:hover {
+  background-color: #7ea2a3;
+}
+
+.btn-group button {
+  margin: 10px 20px 0;
+  margin-top: 20px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  background: #8a759e;
+  color: #fff;
+  cursor: pointer;
+}
+
+.activity-tooltip {
+  flex: 1;
+  position: relative;
+  display: inline-block;
+  cursor: help;
+  margin-left: 20px;
+}
+
+.activity-tooltip .tooltip-box {
+  visibility: hidden;
+  background-color: var(--hover);
+  color: var(--text-dark);
+  text-align: left;
+  border-radius: 8px;
+  padding: 8px 12px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%; /* above the label */
+  left: 0;
+  width: max-content;
+  max-width: 300px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 0.9rem;
+}
+
+.activity-tooltip .tooltip-box::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 10px;
+  margin-left: -5px;
+  border-width: 6px;
+  border-style: solid;
+  border-color: var(--hover) transparent transparent transparent;
+}
+
+.activity-tooltip:hover .tooltip-box {
+  visibility: visible;
+  opacity: 1;
+}
+
+input[type="checkbox"][name="activity"] {
+  position: relative;
+  top: 20px; 
+}
+
+
+
+
+
+
