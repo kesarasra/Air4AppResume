@@ -1,15 +1,15 @@
 from flask import Flask, request, jsonify, send_from_directory
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-import os
+import os, json
 
 app = Flask(__name__)
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
-# Setup credentials
-SERVICE_ACCOUNT_FILE = 'credentials.json' 
-creds = service_account.Credentials.from_service_account_file(
-    SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+# Load JSON content from environment variable
+service_account_info = json.loads(os.environ['GOOGLE_CREDENTIALS'])
+creds = service_account.Credentials.from_service_account_info(
+    service_account_info, scopes=SCOPES)
 
 # Sheet IDs
 DAILY_LOGGER_ID = '1Nao5N_jvnBcCZTwWwoWPZPpK9vB4w-ajn2MVLG79C3U'
