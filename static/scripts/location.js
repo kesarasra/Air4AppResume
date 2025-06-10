@@ -80,5 +80,19 @@ window.onload = async () => {
     console.error('Error fetching Tree IDs:', err);
     alert('Error loading tree database. Please try again later.');
   }
+
+    // ✅ Smart Welcome Logic
+  const workerName = getFromSession('workerName');
+  const lastWelcomed = getFromSession('lastWelcomedWorker');
+
+  if (workerName && workerName !== lastWelcomed) {
+    showPopup(`Welcome, ${workerName}!`, {
+      className: 'welcome',
+      duration: 3000,
+      sound: 'sounds/welcome.wav'
+    });
+    saveToSession('lastWelcomedWorker', workerName);
+  }
+
 };
 

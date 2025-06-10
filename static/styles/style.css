@@ -119,6 +119,35 @@ input[type="checkbox"][name="activity"] {
   top: 20px; 
 }
 
+.custom-popup {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #9103bd;
+  color: #ebebeb;
+  border: 1px solid #ccc;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  z-index: 1000;
+  font-family: sans-serif;
+  animation: fadeInOut 2s ease forwards;
+}
+
+.custom-popup.goodbye {
+  background-color: #9103bd;
+  color: #ebebeb;
+}
+
+/* Simple fade in/out animation */
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translate(-50%, -10px); }
+  10% { opacity: 1; transform: translate(-50%, 0); }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, 10px); }
+}
+
 
 
 

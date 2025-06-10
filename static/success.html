@@ -22,17 +22,32 @@
     // Keep workerName and logDate
     const worker = getFromSession('workerName');
     const date = getFromSession('logDate');
+    const lastWelcomed = getFromSession('lastWelcomedWorker');
 
     sessionStorage.clear();
     saveToSession('workerName', worker);
     saveToSession('logDate', date);
+    saveToSession('lastWelcomedWorker', lastWelcomed);
 
     // Go back to location step
     window.location.href = 'location.html';
   }
 
   function exitForm() {
-    sessionStorage.clear();
-    window.location.href = 'index.html';
+    const worker = getFromSession('workerName') || 'worker';
+
+    // Show goodbye popup
+    showPopup(`Good job today, ${worker}.\nHave a good rest!`, {
+      className: 'goodbye',
+      duration: 3000,
+      sound: 'sounds/goodbye.wav'
+    });
+
+    // Delay redirect to allow popup to show
+    setTimeout(() => {
+      sessionStorage.clear();
+      window.location.href = 'index.html';
+    }, 3000);
   }
+
 </script>

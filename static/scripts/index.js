@@ -3,6 +3,7 @@ document.getElementById('step1-form').addEventListener('submit', (e) => {
   const name = document.getElementById('workerName').value;
   const date = document.getElementById('logDate').value;
   saveToSession('workerName', name);
+  saveToSession('lastWelcomedWorker', null); // ✅ Reset welcome state when new user selected
   saveToSession('logDate', date);
   window.location.href = 'location.html';
 });
