@@ -9,11 +9,11 @@
 <body>
   <header class="navbar">
     <h1>Daily Logger</h1>
-    <button onclick="window.location.href='/'">Home</button>
-    {% if username == 'admin' %}
-      <button onclick="window.location.href='/admin/view-log'">View Sheet</button>
-    {% endif %}
-    <button onclick="window.location.href='/logout'">Logout</button>
+    <div>
+        <button onclick="window.location.href='/'">Home</button>
+        <button onclick="window.location.href='/admin/view-log'">View Sheet</button>
+        <button onclick="window.location.href='/logout'">Logout</button>
+    </div>
   </header>
   <main class="container">
     <h1>Name & Date</h1>
