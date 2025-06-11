@@ -25,8 +25,8 @@ ACTIVITIES_SHEET = 'Activities'
 
 # Admin/User credentials
 USERS = {
-    'admin': 'airfour4admin',
-    'test': 'airfour4',
+    'admin': 'admina44',
+    'test': 'testa44',
     'Nong': 'nonga44',
     'Srithon': 'srithona44',
     'Thaen': 'thaena44'
