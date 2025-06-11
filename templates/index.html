@@ -7,8 +7,16 @@
   <link rel="stylesheet" href="styles/style.css" />
 </head>
 <body>
-  <main class="container">
+  <header class="navbar">
     <h1>Daily Logger</h1>
+    <button onclick="window.location.href='/'">Home</button>
+    {% if username == 'admin' %}
+      <button onclick="window.location.href='/admin/view-log'">View Sheet</button>
+    {% endif %}
+    <button onclick="window.location.href='/logout'">Logout</button>
+  </header>
+  <main class="container">
+    <h1>Name & Date</h1>
     <form id="step1-form">
       <label for="workerName">Worker Name</label>
       <select id="workerName" required></select>

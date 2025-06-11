@@ -1,9 +1,11 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, session, redirect, url_for, render_template_string, render_template
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import os, json
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('APP_SECRET_KEY', 'default_secret_key')
+
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 # Load JSON content from environment variable
@@ -21,21 +23,54 @@ LOG_SHEET = 'DailyLog'
 TREE_SHEET = 'CleanedSheet1'
 ACTIVITIES_SHEET = 'Activities'
 
+# Admin/User credentials
+USERS = {
+    'admin': 'airfour4admin',
+    'test': 'airfour4',
+    'Nong': 'nonga44',
+    'Srithon': 'srithona44',
+    'Thaen': 'thaena44'
+}
 
 def get_service():
     return build('sheets', 'v4', credentials=creds)
 
+@app.route('/static/<path:path>')
+def public_static(path):
+    return send_from_directory('static', path)
+
 @app.route('/')
-def index():
-    return send_from_directory('static', 'index.html')
+def home():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    return render_template('index.html', username=session['username'], USERS=USERS)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if username in USERS and USERS[username] == password:
+            session['username'] = username
+            return redirect(url_for('home'))
+        return 'Invalid credentials', 401
+    return send_from_directory('static', 'login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('login'))
 
 @app.route('/<path:path>')
 def static_proxy(path):
-    # serve static files from the 'static' folder
+    if 'username' not in session:
+        return redirect(url_for('login'))
     return send_from_directory('static', path)
 
 @app.route('/api/worker-names', methods=['GET'])
 def get_worker_names():
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
     service = get_service()
     sheet = service.spreadsheets()
     result = sheet.values().get(
@@ -48,6 +83,8 @@ def get_worker_names():
 
 @app.route('/api/tree-ids', methods=['GET'])
 def get_tree_ids_and_lines():
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
     service = get_service()
     sheet = service.spreadsheets()
 
@@ -72,6 +109,8 @@ def get_tree_ids_and_lines():
 
 @app.route('/api/activities', methods=['GET'])
 def get_activities():
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
     service = get_service()
     sheet = service.spreadsheets()
     result = sheet.values().get(
@@ -89,6 +128,8 @@ def get_activities():
 
 @app.route('/api/submit', methods=['POST'])
 def submit_log():
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
     data = request.json
     values = [[
         data['date'],
@@ -110,6 +151,24 @@ def submit_log():
     ).execute()
 
     return jsonify({"status": "success"})
+
+@app.route('/admin/view-log')
+def admin_view_log():
+    if 'username' not in session:
+        return redirect('/login')
+    
+    if session['username'] != 'admin':
+        return "Access denied", 403
+
+    service = get_service()
+    sheet = service.spreadsheets()
+    result = sheet.values().get(
+        spreadsheetId=DAILY_LOGGER_ID,
+        range=f"{LOG_SHEET}!A1:G"  # Adjust columns as needed
+    ).execute()
+    
+    data = result.get('values', [])
+    return render_template('view_log.html', sheet_data=data)
 
 
 if __name__ == '__main__':

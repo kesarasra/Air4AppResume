@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - Daily Logger</title>
+  <link rel="stylesheet" href="/static/styles/style.css" />
+</head>
+<body>
+    <header class="navbar">
+        <h1>Daily Logger</h1>
+    </header>
+  <main class="container">
+    <h1>Login</h1>
+    <form method="post" action="/login">
+      <label for="username">Username</label>
+      <input name="username" id="username" required />
+
+      <label for="password">Password</label>
+      <input name="password" id="password" type="password" required />
+
+      <button type="submit" class="cta">Login</button>
+    </form>
+  </main>
+</body>
+</html>

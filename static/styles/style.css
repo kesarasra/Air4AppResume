@@ -148,6 +148,32 @@ input[type="checkbox"][name="activity"] {
   100% { opacity: 0; transform: translate(-50%, 10px); }
 }
 
+.navbar {
+  position: sticky;
+  top: 0;
+  background-color: #333;
+  color: white;
+  padding:4px 20px;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: Arial, sans-serif;
+}
+
+.navbar .logout-btn {
+  color: white;
+  text-decoration: none;
+  padding: 8px 15px;
+  background-color: #e74c3c;
+  border-radius: 4px;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.navbar .logout-btn:hover {
+  background-color: #c0392b;
+}
 
 
 
