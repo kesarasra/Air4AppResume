@@ -27,9 +27,12 @@ ACTIVITIES_SHEET = 'Activities'
 USERS = {
     'admin': 'admina44',
     'test': 'testa44',
-    'Nong': 'nonga44',
-    'Srithon': 'srithona44',
-    'Thaen': 'thaena44'
+    'อนงค์': '1234567',
+    'ศรีธร': '1234567',
+    'แต๋ม': '1234567',
+    'อ๊อฟ': '1234567',
+    'เก่ง': '1234567',
+    'เอ๋ย': '1234567'
 }
 
 def get_service():
