@@ -86,7 +86,7 @@ window.onload = async () => {
   const lastWelcomed = getFromSession('lastWelcomedWorker');
 
   if (workerName && workerName !== lastWelcomed) {
-    showPopup(`Welcome, ${workerName}!`, {
+    showPopup(`ยินดีต้อนรับ, ${workerName}!`, {
       className: 'welcome',
       duration: 3000,
       sound: 'sounds/welcome.wav'

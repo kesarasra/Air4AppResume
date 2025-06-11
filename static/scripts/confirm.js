@@ -11,13 +11,13 @@ window.onload = () => {
 
   const summary = document.getElementById('review-data');
   summary.innerHTML = `
-    <p><strong>Worker:</strong> ${data.worker}</p>
-    <p><strong>Date:</strong> ${data.date}</p>
-    ${data.phase ? `<p><strong>Phase:</strong> ${data.phase}</p>` : ''}
-    ${data.zone ? `<p><strong>Zone:</strong> ${data.zone}</p>` : ''}
-    ${data.line ? `<p><strong>Line:</strong> ${data.line}</p>` : ''}
-    ${data.treeID ? `<p><strong>Tree ID:</strong> ${data.treeID}</p>` : ''}
-    <p><strong>Activities:</strong> ${data.activities.join(', ')}</p>
+    <p><strong>คนงาน:</strong> ${data.worker}</p>
+    <p><strong>วันที่:</strong> ${data.date}</p>
+    ${data.phase ? `<p><strong>เฟส:</strong> ${data.phase}</p>` : ''}
+    ${data.zone ? `<p><strong>โซน:</strong> ${data.zone}</p>` : ''}
+    ${data.line ? `<p><strong>เส้น:</strong> ${data.line}</p>` : ''}
+    ${data.treeID ? `<p><strong>รหัสต้นไม้:</strong> ${data.treeID}</p>` : ''}
+    <p><strong>กิจกรรม:</strong> ${data.activities.join(', ')}</p>
   `;
 
   document.getElementById('confirm-btn').addEventListener('click', async () => {
