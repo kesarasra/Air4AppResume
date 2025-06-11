@@ -16,13 +16,16 @@
             font-family: Arial, sans-serif;
         }
         th {
-            background-color: #333; /* Darker background for contrast */
+            background-color: #333;
+            cursor: pointer; /* Show pointer cursor on headers */
         }
         td {
-            background-color: #222; /* Optional: dark background for cells */
+            background-color: #222;
+        }
+        th:hover {
+            background-color: #444;
         }
     </style>
-
 </head>
 <body>
     <header class="navbar">
@@ -36,28 +39,81 @@
 
     <main>
         <h2>Sheet Log Data</h2>
-        {% if sheet_data %}
-            <table>
+        {% if headers and rows %}
+            <table data-sort-dir="">
                 <thead>
-                <tr>
-                    {% for col in sheet_data[0] %}
-                    <th>{{ col }}</th>
-                    {% endfor %}
-                </tr>
+                    <tr>
+                        {% for col in headers %}
+                            <th onclick="sortTable({{ loop.index0 }})">
+                                {{ col }}
+                            </th>
+                        {% endfor %}
+                    </tr>
                 </thead>
                 <tbody>
-                {% for row in sheet_data[1:] %}
-                    <tr>
-                    {% for cell in row %}
-                        <td>{{ cell }}</td>
+                    {% for row in rows %}
+                        <tr>
+                            {% for cell in row %}
+                                <td>{{ cell }}</td>
+                            {% endfor %}
+                        </tr>
                     {% endfor %}
-                    </tr>
-                {% endfor %}
                 </tbody>
             </table>
-            {% else %}
+        {% else %}
             <p>No data found in the sheet.</p>
-            {% endif %}
+        {% endif %}
     </main>
+
+    <script>
+    function parseDateDDMMYYYY(dateStr) {
+        const parts = dateStr.split('/');
+        if (parts.length !== 3) return null;
+        const [dd, mm, yyyy] = parts;
+        return new Date(`${yyyy}-${mm}-${dd}`); // ISO format for Date parsing
+    }
+
+    function sortTable(columnIndex) {
+        const table = document.querySelector('table');
+        const tbody = table.querySelector('tbody');
+        let rows = Array.from(tbody.querySelectorAll('tr'));
+
+        rows = rows.filter(row => row.cells.length > columnIndex);
+
+        const isAscending = table.getAttribute('data-sort-dir') !== 'asc';
+        table.setAttribute('data-sort-dir', isAscending ? 'asc' : 'desc');
+
+        rows.sort((a, b) => {
+            const cellA = a.cells[columnIndex].textContent.trim();
+            const cellB = b.cells[columnIndex].textContent.trim();
+
+            // Special handling for Date column (index 0)
+            if (columnIndex === 0) {
+                const dateA = parseDateDDMMYYYY(cellA);
+                const dateB = parseDateDDMMYYYY(cellB);
+
+                if (dateA && dateB) {
+                    return isAscending ? dateA - dateB : dateB - dateA;
+                }
+                // If dates are invalid, fallback to string compare
+                return isAscending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+            }
+
+            // Numeric columns: parse floats
+            const numA = parseFloat(cellA);
+            const numB = parseFloat(cellB);
+            if (!isNaN(numA) && !isNaN(numB)) {
+                return isAscending ? numA - numB : numB - numA;
+            }
+
+            // Default string compare
+            return isAscending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+        });
+
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
+    </script>
 </body>
 </html>
+

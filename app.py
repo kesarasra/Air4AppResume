@@ -160,15 +160,76 @@ def admin_view_log():
     if session['username'] != 'admin':
         return "Access denied", 403
 
+    sort_by = request.args.get('sort_by', 'Date')  # Default to Date
+
+    # Mapping column names to their index (0-based)
+    column_map = {
+        'Date': 0,
+        'WorkerName': 1,
+        'Phase': 2,
+        'Zone': 3,
+        'Line': 4,
+        'TreeID': 5,
+        'Activity': 6
+    }
+
     service = get_service()
     sheet = service.spreadsheets()
     result = sheet.values().get(
         spreadsheetId=DAILY_LOGGER_ID,
-        range=f"{LOG_SHEET}!A1:G"  # Adjust columns as needed
+        range=f"{LOG_SHEET}!A1:G"  # A1:G should match your columns
     ).execute()
     
     data = result.get('values', [])
-    return render_template('view_log.html', sheet_data=data)
+    # Normalize row lengths
+    if data:
+        max_len = len(data[0])  # Header length
+        for i in range(len(data)):
+            while len(data[i]) < max_len:
+                data[i].append('')  # Pad with empty strings
+
+    if not data:
+        return "No data found.", 404
+
+    headers = data[0]
+    rows = data[1:]
+
+    def format_date_yyyymmdd_to_ddmmyyyy(date_str):
+        parts = date_str.split('/')
+        if len(parts) == 3:
+            yyyy, mm, dd = parts
+            return f"{dd}/{mm}/{yyyy}"
+        return date_str
+
+    def parse_date_yyyymmdd(date_str):
+        # Returns a comparable tuple (yyyy, mm, dd) or None if invalid
+        parts = date_str.split('/')
+        if len(parts) == 3:
+            yyyy, mm, dd = parts
+            try:
+                return (int(yyyy), int(mm), int(dd))
+            except ValueError:
+                return None
+        return None
+
+    # Sort rows based on the column requested
+    if sort_by in column_map:
+        col_index = column_map[sort_by]
+
+        if sort_by == 'Date':
+            # Sort dates by parsing the original date format (YYYY/MM/DD)
+            rows.sort(key=lambda x: parse_date_yyyymmdd(x[col_index]) or (0,0,0))
+        else:
+            # Sort other columns as strings (case insensitive)
+            rows.sort(key=lambda x: x[col_index].lower() if col_index < len(x) else "")
+
+    # Format the date column for display AFTER sorting
+    for row in rows:
+        if len(row) > 0:
+            row[0] = format_date_yyyymmdd_to_ddmmyyyy(row[0])
+
+    return render_template('view_log.html', headers=headers, rows=rows, sort_by=sort_by)
+
 
 
 if __name__ == '__main__':
