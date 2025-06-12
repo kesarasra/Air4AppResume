@@ -83,6 +83,29 @@ def get_worker_names():
     names = [row[0] for row in result.get('values', []) if row]
     return jsonify(names)
 
+@app.route('/api/phases-zones', methods=['GET'])
+def get_phases_zones():
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    service = get_service()
+    sheet = service.spreadsheets()
+
+    # Assuming Phase = Column C, Zone = Column A in TREE_SHEET
+    phase_result = sheet.values().get(
+        spreadsheetId=TREE_DB_ID,
+        range=f"{TREE_SHEET}!A2:A"
+    ).execute()
+    zone_result = sheet.values().get(
+        spreadsheetId=TREE_DB_ID,
+        range=f"{TREE_SHEET}!C2:C"
+    ).execute()
+
+    # Extract and deduplicate
+    phases = sorted(set(row[0].strip() for row in phase_result.get('values', []) if row))
+    zones = sorted(set(row[0].strip() for row in zone_result.get('values', []) if row))
+
+    return jsonify({"phases": phases, "zones": zones})
 
 @app.route('/api/tree-ids', methods=['GET'])
 def get_tree_ids_and_lines():
@@ -91,23 +114,35 @@ def get_tree_ids_and_lines():
     service = get_service()
     sheet = service.spreadsheets()
 
-    # Get Tree IDs from Column E
     tree_result = sheet.values().get(
         spreadsheetId=TREE_DB_ID,
         range=f"{TREE_SHEET}!E2:E"
     ).execute()
-    tree_ids = [row[0].strip().upper() for row in tree_result.get('values', []) if row]
-
-    # Get Line Numbers from Column B
+    zone_result = sheet.values().get(
+        spreadsheetId=TREE_DB_ID,
+        range=f"{TREE_SHEET}!C2:C"
+    ).execute()
     line_result = sheet.values().get(
         spreadsheetId=TREE_DB_ID,
-        range=f"{TREE_SHEET}!B2:B"
+        range=f"{TREE_SHEET}!D2:D"
     ).execute()
-    line_numbers = [row[0].strip() for row in line_result.get('values', []) if row]
+
+    tree_ids = [row[0].strip().upper() for row in tree_result.get('values', []) if row]
+    zones = [row[0].strip() for row in zone_result.get('values', []) if row]
+    lines = [row[0].strip() for row in line_result.get('values', []) if row]
+
+    # Build zone => [lines]
+    zone_to_lines = {}
+    for z, l in zip(zones, lines):
+        if z and l:
+            zone_to_lines.setdefault(z, set()).add(l)
+
+    # Convert sets to sorted lists
+    zone_to_lines = {z: sorted(list(lines)) for z, lines in zone_to_lines.items()}
 
     return jsonify({
-        "treeIDs": list(set(tree_ids)),  # Remove duplicates
-        "lines": list(set(line_numbers))  # Remove duplicates
+        "treeIDs": list(set(tree_ids)),
+        "zoneToLinesMap": zone_to_lines
     })
 
 @app.route('/api/activities', methods=['GET'])
