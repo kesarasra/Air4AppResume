@@ -8,8 +8,15 @@ app.secret_key = os.environ.get('APP_SECRET_KEY', 'default_secret_key')
 
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
-creds = service_account.Credentials.from_service_account_file(
-    'credentials.json', scopes=SCOPES)
+creds_json = os.getenv("GOOGLE_CREDS_JSON")
+if not creds_json:
+    raise ValueError("Missing GOOGLE_CREDS_JSON environment variable")
+
+creds_dict = json.loads(creds_json)
+creds = service_account.Credentials.from_service_account_info(creds_dict)
+
+service = build('sheets', 'v4', credentials=creds)
+sheet = service.spreadsheets()
 
 # Sheet IDs
 DAILY_LOGGER_ID = '1Nao5N_jvnBcCZTwWwoWPZPpK9vB4w-ajn2MVLG79C3U'
