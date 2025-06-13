@@ -8,10 +8,8 @@ app.secret_key = os.environ.get('APP_SECRET_KEY', 'default_secret_key')
 
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
-# Load JSON content from environment variable
-service_account_info = json.loads(os.environ['GOOGLE_CREDENTIALS'])
-creds = service_account.Credentials.from_service_account_info(
-    service_account_info, scopes=SCOPES)
+creds = service_account.Credentials.from_service_account_file(
+    'credentials.json', scopes=SCOPES)
 
 # Sheet IDs
 DAILY_LOGGER_ID = '1Nao5N_jvnBcCZTwWwoWPZPpK9vB4w-ajn2MVLG79C3U'
@@ -116,7 +114,7 @@ def get_tree_ids_and_lines():
 
     tree_result = sheet.values().get(
         spreadsheetId=TREE_DB_ID,
-        range=f"{TREE_SHEET}!E2:E"
+        range=f"{TREE_SHEET}!G2:G"
     ).execute()
     zone_result = sheet.values().get(
         spreadsheetId=TREE_DB_ID,
