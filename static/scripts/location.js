@@ -7,35 +7,41 @@ document.getElementById('location-form').addEventListener('submit', async e => {
   const phase = document.getElementById('phase').value.trim();
   const zone = document.getElementById('zone').value.trim();
   const line = document.getElementById('line').value.trim();
-  const treeID = document.getElementById('treeID').value.trim();
+  const treeID = document.getElementById('treeID').value.trim().toUpperCase();
 
-  let filledCount = 0;
-  if (phase) filledCount++;
-  if (zone && !line) filledCount++;
-  if (zone && line) filledCount++;
-  if (treeID) filledCount++;
-
-  if (filledCount !== 1) {
-    alert('Please fill exactly one of the following: Phase OR Zone (with or without Line) OR Tree ID.');
-    return;
-  }
-
-  if (line && !zone) {
-    alert('Please enter Zone number when entering a Line number.');
-    return;
-  }
-
+  // Validate Tree ID (can be submitted alone)
   if (treeID) {
-    const isValidTree = validTreeIDs.includes(treeID.toUpperCase());
+    const isValidTree = validTreeIDs.includes(treeID);
     if (!isValidTree) {
-      alert('Invalid Tree ID. Please check your input.');
+      alert('รหัสต้นไม้ไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่กรอก');
       return;
     }
-    saveToSession('treeID', treeID.toUpperCase());
-  } else {
-    saveToSession('treeID', '');
+    saveToSession('treeID', treeID);
+    saveToSession('phase', '');
+    saveToSession('zone', '');
+    saveToSession('line', '');
+    window.location.href = 'activity.html';
+    return;
   }
 
+  // If Tree ID is not provided, do Phase-Zone-Line validation
+  if (!phase && !zone && !line) {
+    alert('กรุณากรอกอย่างน้อยช่วงแปลง หรือ ช่วงแปลง + โซน หรือ ช่วงแปลง + โซน + สาย หรือกรอกรหัสต้นไม้ที่ถูกต้อง');
+    return;
+  }
+
+  if (!phase && zone) {
+    alert('โซนต้องระบุร่วมกับช่วงแปลง');
+    return;
+  }
+
+  if (line && (!zone || !phase)) {
+    alert('สายต้องระบุร่วมกับทั้งโซนและช่วงแปลง');
+    return;
+  }
+
+  // Passed validation
+  saveToSession('treeID', '');
   saveToSession('phase', phase);
   saveToSession('zone', zone);
   saveToSession('line', line);
@@ -53,6 +59,7 @@ window.onload = async () => {
       fetch('/api/tree-ids'),
       fetch('/api/phases-zones')
     ]);
+
     if (!treeRes.ok || !metaRes.ok) throw new Error('Failed to fetch data');
 
     const treeData = await treeRes.json();
@@ -60,6 +67,7 @@ window.onload = async () => {
 
     validTreeIDs = treeData.treeIDs || [];
     zoneToLinesMap = treeData.zoneToLinesMap || {};
+    const phaseZoneMap = metaData.phaseZoneMap || {};
 
     // Populate Phase
     (metaData.phases || []).forEach(p => {
@@ -69,21 +77,28 @@ window.onload = async () => {
       phaseSelect.appendChild(option);
     });
 
-    // Populate Zone
-    (metaData.zones || []).forEach(z => {
-      const option = document.createElement('option');
-      option.value = z;
-      option.textContent = z;
-      zoneSelect.appendChild(option);
+    // When Phase changes, update Zone options
+    phaseSelect.addEventListener('change', () => {
+      const selectedPhase = phaseSelect.value;
+      const zones = phaseZoneMap[selectedPhase] || [];
+
+      zoneSelect.innerHTML = '<option value="">-- เลือกโซน --</option>';
+      lineSelect.innerHTML = '<option value="">-- เลือกสาย --</option>'; // reset Line
+
+      zones.forEach(z => {
+        const option = document.createElement('option');
+        option.value = z;
+        option.textContent = z;
+        zoneSelect.appendChild(option);
+      });
     });
 
-    // When Zone is selected, update Line options
+    // When Zone changes, update Line options
     zoneSelect.addEventListener('change', () => {
       const selectedZone = zoneSelect.value;
       const lines = zoneToLinesMap[selectedZone] || [];
 
-      // Clear previous Line options
-      lineSelect.innerHTML = '<option value="">-- Select Line (optional) --</option>';
+      lineSelect.innerHTML = '<option value="">-- เลือกสาย --</option>';
       lines.forEach(l => {
         const option = document.createElement('option');
         option.value = l;
@@ -97,7 +112,7 @@ window.onload = async () => {
     alert('Error loading tree database. Please try again later.');
   }
 
-  // Welcome
+  // Welcome message
   const workerName = getFromSession('workerName');
   const lastWelcomed = getFromSession('lastWelcomedWorker');
   if (workerName && workerName !== lastWelcomed) {
@@ -109,4 +124,3 @@ window.onload = async () => {
     saveToSession('lastWelcomedWorker', workerName);
   }
 };
-

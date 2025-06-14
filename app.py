@@ -100,21 +100,34 @@ def get_phases_zones():
     service = get_service()
     sheet = service.spreadsheets()
 
-    # Assuming Phase = Column C, Zone = Column A in TREE_SHEET
-    phase_result = sheet.values().get(
+    result = sheet.values().get(
         spreadsheetId=TREE_DB_ID,
-        range=f"{TREE_SHEET}!A2:A"
-    ).execute()
-    zone_result = sheet.values().get(
-        spreadsheetId=TREE_DB_ID,
-        range=f"{TREE_SHEET}!C2:C"
+        range=f"{TREE_SHEET}!A2:D"
     ).execute()
 
-    # Extract and deduplicate
-    phases = sorted(set(row[0].strip() for row in phase_result.get('values', []) if row))
-    zones = sorted(set(row[0].strip() for row in zone_result.get('values', []) if row))
+    values = result.get('values', [])
 
-    return jsonify({"phases": phases, "zones": zones})
+    phases = set()
+    phase_to_zones = {}
+
+    for row in values:
+        if len(row) < 3:
+            continue
+        phase = row[0].strip()
+        zone = row[2].strip()
+
+        if phase and zone:
+            phases.add(phase)
+            phase_to_zones.setdefault(phase, set()).add(zone)
+
+    sorted_phases = sorted(list(phases))
+    phase_zone_map = {phase: sorted(list(zones)) for phase, zones in phase_to_zones.items()}
+
+    return jsonify({
+        "phases": sorted_phases,
+        "phaseZoneMap": phase_zone_map
+    })
+
 
 @app.route('/api/tree-ids', methods=['GET'])
 def get_tree_ids_and_lines():
