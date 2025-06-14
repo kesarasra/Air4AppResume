@@ -190,16 +190,33 @@ def get_activities():
 def submit_log():
     if 'username' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
+
     data = request.json
-    values = [[
-        data['date'],
-        data['worker'],
-        data['phase'],
-        data['zone'],
-        data['line'],
-        data['treeID'],
-        ", ".join(data['activities'])
-    ]]
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    # Accept both single dict or list of dicts
+    entries = data if isinstance(data, list) else [data]
+
+    values_to_append = []
+    for entry in entries:
+        # Basic validation for required fields (you can extend this)
+        required_fields = ['date', 'worker', 'activities']
+        missing = [f for f in required_fields if f not in entry or not entry[f]]
+        if missing:
+            return jsonify({'error': f'Missing required fields: {missing}'}), 400
+
+        # Prepare row values for append, default empty strings if key missing
+        row = [
+            entry.get('date', ''),
+            entry.get('worker', ''),
+            entry.get('phase', ''),
+            entry.get('zone', ''),
+            entry.get('line', ''),
+            entry.get('treeID', ''),
+            ", ".join(entry.get('activities', []))
+        ]
+        values_to_append.append(row)
 
     service = get_service()
     sheet = service.spreadsheets()
@@ -207,10 +224,10 @@ def submit_log():
         spreadsheetId=DAILY_LOGGER_ID,
         range=f"{LOG_SHEET}!A1",
         valueInputOption="RAW",
-        body={"values": values}
+        body={"values": values_to_append}
     ).execute()
 
-    return jsonify({"status": "success"})
+    return jsonify({"status": "success", "saved": len(values_to_append)})
 
 @app.route('/admin/view-log')
 def admin_view_log():

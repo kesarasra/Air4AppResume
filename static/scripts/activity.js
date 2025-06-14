@@ -11,7 +11,6 @@ document.getElementById('activity-form').addEventListener('submit', e => {
 
   saveToSession('activities', checked);
 
-  // Still ensure name & date are present
   const worker = getFromSession('workerName');
   const date = getFromSession('logDate');
 
@@ -21,18 +20,26 @@ document.getElementById('activity-form').addEventListener('submit', e => {
     return;
   }
 
-  // Redirect to confirmation
   window.location.href = 'confirm.html';
 });
 
 window.onload = () => {
+  const treeIDs = getFromSession('treeIDs') || [];
+
+  if (treeIDs.length > 0) {
+    const summaryDiv = document.getElementById('tree-id-summary');
+    if (summaryDiv) {
+      summaryDiv.innerHTML = `<strong>รหัสต้นไม้:</strong> ${treeIDs.join(', ')}`;
+    }
+  }
+
   const container = document.getElementById('activity-list');
   container.innerHTML = 'Loading activities...';
 
   fetch('/api/activities')
     .then(response => response.json())
     .then(list => {
-      container.innerHTML = ''; // Clear loading text
+      container.innerHTML = '';
       if (list.length === 0) {
         container.innerHTML = '<p>No activities available.</p>';
         return;
@@ -40,8 +47,6 @@ window.onload = () => {
 
       list.forEach(({ name, description }) => {
         const div = document.createElement('div');
-
-        // Create a checkbox with a tooltip (hover) from the description
         div.innerHTML = `
           <label>
             <input type="checkbox" name="activity" value="${name}" />
@@ -51,7 +56,6 @@ window.onload = () => {
             </span>
           </label>
         `;
-
         container.appendChild(div);
       });
     })
@@ -60,6 +64,7 @@ window.onload = () => {
       container.innerHTML = '<p>Failed to load activities. Please try again later.</p>';
     });
 };
+
 
 
 

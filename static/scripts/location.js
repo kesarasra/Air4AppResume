@@ -4,19 +4,20 @@ let zoneToLinesMap = {};
 document.getElementById('location-form').addEventListener('submit', async e => {
   e.preventDefault();
 
-  const phase = document.getElementById('phase').value.trim();
-  const zone = document.getElementById('zone').value.trim();
-  const line = document.getElementById('line').value.trim();
-  const treeID = document.getElementById('treeID').value.trim().toUpperCase();
+  // Collect all tree IDs entered
+  const treeInputs = Array.from(document.querySelectorAll('.tree-id-input'));
+  const treeIDs = treeInputs.map(input => input.value.trim().toUpperCase()).filter(Boolean);
 
-  // Validate Tree ID (can be submitted alone)
-  if (treeID) {
-    const isValidTree = validTreeIDs.includes(treeID);
-    if (!isValidTree) {
-      alert('รหัสต้นไม้ไม่ถูกต้อง กรุณาตรวจสอบข้อมูลที่กรอก');
+  if (treeIDs.length > 0) {
+    // Validate all Tree IDs
+    const invalid = treeIDs.filter(id => !validTreeIDs.includes(id));
+    if (invalid.length > 0) {
+      alert(`รหัสต้นไม้ไม่ถูกต้อง: ${invalid.join(', ')}`);
       return;
     }
-    saveToSession('treeID', treeID);
+
+    // Save list of Tree IDs and clear other location inputs
+    saveToSession('treeIDs', treeIDs);
     saveToSession('phase', '');
     saveToSession('zone', '');
     saveToSession('line', '');
@@ -24,7 +25,11 @@ document.getElementById('location-form').addEventListener('submit', async e => {
     return;
   }
 
-  // If Tree ID is not provided, do Phase-Zone-Line validation
+  // If no Tree ID provided, validate Phase-Zone-Line fallback
+  const phase = document.getElementById('phase').value.trim();
+  const zone = document.getElementById('zone').value.trim();
+  const line = document.getElementById('line').value.trim();
+
   if (!phase && !zone && !line) {
     alert('กรุณากรอกอย่างน้อยช่วงแปลง หรือ ช่วงแปลง + โซน หรือ ช่วงแปลง + โซน + สาย หรือกรอกรหัสต้นไม้ที่ถูกต้อง');
     return;
@@ -41,7 +46,7 @@ document.getElementById('location-form').addEventListener('submit', async e => {
   }
 
   // Passed validation
-  saveToSession('treeID', '');
+  saveToSession('treeIDs', []);
   saveToSession('phase', phase);
   saveToSession('zone', zone);
   saveToSession('line', line);
@@ -69,7 +74,7 @@ window.onload = async () => {
     zoneToLinesMap = treeData.zoneToLinesMap || {};
     const phaseZoneMap = metaData.phaseZoneMap || {};
 
-    // Populate Phase
+    // Populate Phase dropdown
     (metaData.phases || []).forEach(p => {
       const option = document.createElement('option');
       option.value = p;
@@ -83,7 +88,7 @@ window.onload = async () => {
       const zones = phaseZoneMap[selectedPhase] || [];
 
       zoneSelect.innerHTML = '<option value="">-- เลือกโซน --</option>';
-      lineSelect.innerHTML = '<option value="">-- เลือกสาย --</option>'; // reset Line
+      lineSelect.innerHTML = '<option value="">-- เลือกสาย --</option>';
 
       zones.forEach(z => {
         const option = document.createElement('option');
@@ -124,3 +129,27 @@ window.onload = async () => {
     saveToSession('lastWelcomedWorker', workerName);
   }
 };
+
+// Dynamically add a new Tree ID field when typing starts in the last field
+document.getElementById('tree-id-container').addEventListener('input', e => {
+  if (e.target.classList.contains('tree-id-input')) {
+    const inputs = document.querySelectorAll('.tree-id-input');
+    const lastInput = inputs[inputs.length - 1];
+
+    // Only add a new input when typing starts in the last input
+    if (e.target === lastInput && lastInput.value.length === 1) {
+      addNewTreeIdInput();
+    }
+  }
+});
+
+function addNewTreeIdInput() {
+  const newInput = document.createElement('input');
+  newInput.type = 'text';
+  newInput.name = 'treeID';
+  newInput.classList.add('tree-id-input');
+  newInput.placeholder = 'Enter Tree ID';
+  newInput.autocomplete = 'off';
+
+  document.getElementById('tree-id-container').appendChild(newInput);
+}
