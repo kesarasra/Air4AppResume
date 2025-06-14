@@ -5,6 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Step 2: Location</title>
   <link rel="stylesheet" href="styles/style.css" />
+  <style>
+    /* Optional quick styles for multiple sets */
+    #pz-container {
+      margin-bottom: 1em;
+    }
+    .pz-set {
+      border: 1px solid #ccc;
+      padding: 1em;
+      margin-bottom: 0.5em;
+      position: relative;
+      border-radius: 4px;
+    }
+    .pz-set label {
+      display: block;
+      margin-top: 0.5em;
+      font-weight: bold;
+    }
+    .pz-set select {
+      width: 100%;
+      padding: 0.3em;
+      margin-top: 0.2em;
+    }
+    .remove-pz-set {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #e74c3c;
+      border: none;
+      color: white;
+      font-weight: bold;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      line-height: 20px;
+    }
+    #add-pz-set-btn {
+      margin-bottom: 1.5em;
+      padding: 0.5em 1em;
+      font-size: 1em;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
   <header class="navbar">
@@ -18,27 +61,35 @@
   <main class="container">
     <h1>เลือกสถานที่ทำงาน</h1>
     <form id="location-form">
-      <label for="phase">เฟส #</label>
-      <select id="phase" name="phase">
-        <option value="">-- เลือกช่วงแปลง --</option>
-      </select>
 
-      <label for="zone">โซน #</label>
-      <select id="zone" name="zone">
-        <option value="">-- เลือกโซน --</option>
-      </select>
+      <div id="pz-container">
+        <div class="pz-set">
+          <label>เฟส #</label>
+          <select class="phase-select" name="phase">
+            <option value="">-- เลือกช่วงแปลง --</option>
+          </select>
 
-      <label for="line">เส้น #</label>
-      <select id="line" name="line">
-        <option value="">-- เลือกสาย --</option>
-      </select>
+          <label>โซน #</label>
+          <select class="zone-select" name="zone">
+            <option value="">-- เลือกโซน --</option>
+          </select>
+
+          <label>เส้น #</label>
+          <select class="line-select" name="line">
+            <option value="">-- เลือกสาย --</option>
+          </select>
+
+          <!-- First set cannot be removed, so hide remove button here -->
+          <button type="button" class="remove-pz-set" title="ลบ" style="display:none;">✕</button>
+        </div>
+      </div>
+
+      <button type="button" id="add-pz-set-btn">เพิ่มเฟส/โซน/เส้น</button>
 
       <label for="treeID">รหัสต้นไม้</label>
       <div id="tree-id-container">
         <input type="text" name="treeID" class="tree-id-input" placeholder="Enter Tree ID" autocomplete="off" />
       </div>
-
-
 
       <div class="btn-group">
         <button type="button" onclick="goBack('/')">ก่อนหน้า</button>
@@ -50,4 +101,5 @@
   <script src="scripts/location.js"></script>
 </body>
 </html>
+
 

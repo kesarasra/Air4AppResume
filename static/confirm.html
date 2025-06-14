@@ -10,19 +10,30 @@
   <header class="navbar">
     <h1>เครื่องบันทึกรายวัน</h1>
     <div>
-        <button onclick="window.location.href='/'">บ้าน</button>
-        <button onclick="window.location.href='/admin/view-log'">ดูแผ่นงาน</button>
-        <button onclick="window.location.href='/logout'">ออกจากระบบ</button>
+      <button onclick="window.location.href='/'">บ้าน</button>
+      <button onclick="window.location.href='/admin/view-log'">ดูแผ่นงาน</button>
+      <button onclick="window.location.href='/logout'">ออกจากระบบ</button>
     </div>
   </header>
   <main class="container">
-    <h1>ตรวจสอบรายการของคุณ</h1>
-    <div id="review-data"></div>
+    <h1>ตรวจสอบข้อมูลก่อนส่ง</h1>
+
+    <section id="location-summary" class="info-box">
+      <!-- Location summary (Tree IDs or Phase/Zone/Line sets) will appear here -->
+    </section>
+
+    <section id="activities-summary" class="info-box">
+      <h2>กิจกรรมที่เลือก</h2>
+      <ul id="activities-list"></ul>
+    </section>
+
     <div class="btn-group">
-      <button onclick="goBack('activity.html')">ก่อนหน้า</button>
-      <button id="confirm-btn" class="cta">ถัดไป</button>
+      <button type="button" onclick="goBack('activity.html')">แก้ไขกิจกรรม</button>
+      <button type="button" onclick="goBack('location.html')">แก้ไขสถานที่</button>
+      <button id="confirm-submit" class="cta">ยืนยันและส่งข้อมูล</button>
     </div>
   </main>
+
   <script src="scripts/utils.js"></script>
   <script src="scripts/confirm.js"></script>
 </body>

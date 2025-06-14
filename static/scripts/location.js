@@ -1,5 +1,6 @@
 let validTreeIDs = [];
 let zoneToLinesMap = {};
+let phaseZoneMap = {};
 
 document.getElementById('location-form').addEventListener('submit', async e => {
   e.preventDefault();
@@ -8,56 +9,65 @@ document.getElementById('location-form').addEventListener('submit', async e => {
   const treeInputs = Array.from(document.querySelectorAll('.tree-id-input'));
   const treeIDs = treeInputs.map(input => input.value.trim().toUpperCase()).filter(Boolean);
 
+  // Validate all Tree IDs if any entered
   if (treeIDs.length > 0) {
-    // Validate all Tree IDs
     const invalid = treeIDs.filter(id => !validTreeIDs.includes(id));
     if (invalid.length > 0) {
       alert(`รหัสต้นไม้ไม่ถูกต้อง: ${invalid.join(', ')}`);
       return;
     }
 
-    // Save list of Tree IDs and clear other location inputs
+    // Save treeIDs and clear phase/zone/line sets
     saveToSession('treeIDs', treeIDs);
-    saveToSession('phase', '');
-    saveToSession('zone', '');
-    saveToSession('line', '');
+    saveToSession('phaseZoneLineSets', []); // clear multi PZL sets
     window.location.href = 'activity.html';
     return;
   }
 
-  // If no Tree ID provided, validate Phase-Zone-Line fallback
-  const phase = document.getElementById('phase').value.trim();
-  const zone = document.getElementById('zone').value.trim();
-  const line = document.getElementById('line').value.trim();
+  // No tree ID — collect all Phase/Zone/Line sets
+  const pzSets = Array.from(document.querySelectorAll('.pz-set'));
+  const collectedSets = [];
 
-  if (!phase && !zone && !line) {
+  for (const set of pzSets) {
+    const phase = set.querySelector('.phase-select').value.trim();
+    const zone = set.querySelector('.zone-select').value.trim();
+    const line = set.querySelector('.line-select').value.trim();
+
+    // If all empty, skip this set
+    if (!phase && !zone && !line) continue;
+
+    // Validation per rules:
+    if (!phase && zone) {
+      alert('โซนต้องระบุร่วมกับช่วงแปลง');
+      return;
+    }
+    if (line && (!zone || !phase)) {
+      alert('สายต้องระบุร่วมกับทั้งโซนและช่วงแปลง');
+      return;
+    }
+    if (!phase && !zone && !line) {
+      alert('กรุณากรอกข้อมูลสถานที่ให้ครบหรือกรอกรหัสต้นไม้');
+      return;
+    }
+
+    collectedSets.push({ phase, zone, line });
+  }
+
+  if (collectedSets.length === 0) {
     alert('กรุณากรอกอย่างน้อยช่วงแปลง หรือ ช่วงแปลง + โซน หรือ ช่วงแปลง + โซน + สาย หรือกรอกรหัสต้นไม้ที่ถูกต้อง');
     return;
   }
 
-  if (!phase && zone) {
-    alert('โซนต้องระบุร่วมกับช่วงแปลง');
-    return;
-  }
-
-  if (line && (!zone || !phase)) {
-    alert('สายต้องระบุร่วมกับทั้งโซนและช่วงแปลง');
-    return;
-  }
-
-  // Passed validation
+  // Passed validation: save sets and clear treeIDs
+  saveToSession('phaseZoneLineSets', collectedSets);
   saveToSession('treeIDs', []);
-  saveToSession('phase', phase);
-  saveToSession('zone', zone);
-  saveToSession('line', line);
 
   window.location.href = 'activity.html';
 });
 
 window.onload = async () => {
-  const phaseSelect = document.getElementById('phase');
-  const zoneSelect = document.getElementById('zone');
-  const lineSelect = document.getElementById('line');
+  const pzContainer = document.getElementById('pz-container');
+  const addBtn = document.getElementById('add-pz-set-btn');
 
   try {
     const [treeRes, metaRes] = await Promise.all([
@@ -72,45 +82,25 @@ window.onload = async () => {
 
     validTreeIDs = treeData.treeIDs || [];
     zoneToLinesMap = treeData.zoneToLinesMap || {};
-    const phaseZoneMap = metaData.phaseZoneMap || {};
+    phaseZoneMap = metaData.phaseZoneMap || {};
+    
+    // Populate first pz-set selects
+    const firstSet = pzContainer.querySelector('.pz-set');
+    populatePhaseOptions(firstSet.querySelector('.phase-select'));
 
-    // Populate Phase dropdown
-    (metaData.phases || []).forEach(p => {
-      const option = document.createElement('option');
-      option.value = p;
-      option.textContent = p;
-      phaseSelect.appendChild(option);
+    // Setup listeners for first pz-set
+    setupCascadingListeners(firstSet);
+
+    // Add button handler to add new pz-set
+    addBtn.addEventListener('click', () => {
+      const newSet = createPZSet();
+      pzContainer.appendChild(newSet);
+      populatePhaseOptions(newSet.querySelector('.phase-select'));
+      setupCascadingListeners(newSet);
+      updateRemoveButtons();
     });
 
-    // When Phase changes, update Zone options
-    phaseSelect.addEventListener('change', () => {
-      const selectedPhase = phaseSelect.value;
-      const zones = phaseZoneMap[selectedPhase] || [];
-
-      zoneSelect.innerHTML = '<option value="">-- เลือกโซน --</option>';
-      lineSelect.innerHTML = '<option value="">-- เลือกสาย --</option>';
-
-      zones.forEach(z => {
-        const option = document.createElement('option');
-        option.value = z;
-        option.textContent = z;
-        zoneSelect.appendChild(option);
-      });
-    });
-
-    // When Zone changes, update Line options
-    zoneSelect.addEventListener('change', () => {
-      const selectedZone = zoneSelect.value;
-      const lines = zoneToLinesMap[selectedZone] || [];
-
-      lineSelect.innerHTML = '<option value="">-- เลือกสาย --</option>';
-      lines.forEach(l => {
-        const option = document.createElement('option');
-        option.value = l;
-        option.textContent = l;
-        lineSelect.appendChild(option);
-      });
-    });
+    updateRemoveButtons();
 
   } catch (err) {
     console.error('Error loading data:', err);
@@ -129,6 +119,106 @@ window.onload = async () => {
     saveToSession('lastWelcomedWorker', workerName);
   }
 };
+
+// Utility: Populate Phase dropdown options
+function populatePhaseOptions(phaseSelect) {
+  phaseSelect.innerHTML = '<option value="">-- เลือกช่วงแปลง --</option>';
+  Object.keys(phaseZoneMap).forEach(p => {
+    const option = document.createElement('option');
+    option.value = p;
+    option.textContent = p;
+    phaseSelect.appendChild(option);
+  });
+}
+
+// Utility: Populate Zone dropdown based on Phase
+function populateZoneOptions(zoneSelect, phase) {
+  zoneSelect.innerHTML = '<option value="">-- เลือกโซน --</option>';
+  if (!phase) return;
+  const zones = phaseZoneMap[phase] || [];
+  zones.forEach(z => {
+    const option = document.createElement('option');
+    option.value = z;
+    option.textContent = z;
+    zoneSelect.appendChild(option);
+  });
+}
+
+// Utility: Populate Line dropdown based on Zone
+function populateLineOptions(lineSelect, zone) {
+  lineSelect.innerHTML = '<option value="">-- เลือกสาย --</option>';
+  if (!zone) return;
+  const lines = zoneToLinesMap[zone] || [];
+  lines.forEach(l => {
+    const option = document.createElement('option');
+    option.value = l;
+    option.textContent = l;
+    lineSelect.appendChild(option);
+  });
+}
+
+// Setup cascading listeners on one pz-set div
+function setupCascadingListeners(pzSet) {
+  const phaseSelect = pzSet.querySelector('.phase-select');
+  const zoneSelect = pzSet.querySelector('.zone-select');
+  const lineSelect = pzSet.querySelector('.line-select');
+
+  phaseSelect.addEventListener('change', () => {
+    populateZoneOptions(zoneSelect, phaseSelect.value);
+    lineSelect.innerHTML = '<option value="">-- เลือกสาย --</option>';
+  });
+
+  zoneSelect.addEventListener('change', () => {
+    populateLineOptions(lineSelect, zoneSelect.value);
+  });
+
+  // Remove button
+  const removeBtn = pzSet.querySelector('.remove-pz-set');
+  removeBtn.addEventListener('click', () => {
+    pzSet.remove();
+    updateRemoveButtons();
+  });
+}
+
+// Create a new Phase/Zone/Line set div with selects and remove button
+function createPZSet() {
+  const div = document.createElement('div');
+  div.className = 'pz-set';
+
+  div.innerHTML = `
+    <label>เฟส #</label>
+    <select class="phase-select" name="phase">
+      <option value="">-- เลือกช่วงแปลง --</option>
+    </select>
+
+    <label>โซน #</label>
+    <select class="zone-select" name="zone">
+      <option value="">-- เลือกโซน --</option>
+    </select>
+
+    <label>เส้น #</label>
+    <select class="line-select" name="line">
+      <option value="">-- เลือกสาย --</option>
+    </select>
+
+    <button type="button" class="remove-pz-set" title="ลบ">✕</button>
+  `;
+
+  return div;
+}
+
+// Show/hide remove buttons: only show if more than one pz-set
+function updateRemoveButtons() {
+  const pzSets = document.querySelectorAll('.pz-set');
+  pzSets.forEach((set, i) => {
+    const btn = set.querySelector('.remove-pz-set');
+    if (pzSets.length > 1) {
+      btn.style.display = 'inline-block';
+    } else {
+      btn.style.display = 'none';
+    }
+  });
+}
 
 // Dynamically add a new Tree ID field when typing starts in the last field
 document.getElementById('tree-id-container').addEventListener('input', e => {
@@ -153,3 +243,4 @@ function addNewTreeIdInput() {
 
   document.getElementById('tree-id-container').appendChild(newInput);
 }
+

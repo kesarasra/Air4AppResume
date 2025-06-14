@@ -195,26 +195,34 @@ def submit_log():
     if not data:
         return jsonify({'error': 'No data provided'}), 400
 
-    # Accept both single dict or list of dicts
-    entries = data if isinstance(data, list) else [data]
+    # Expecting a dict with keys: workerName, logDate, activities, locations
+    worker = data.get('workerName') or data.get('worker')
+    date = data.get('logDate') or data.get('date')
+    activities = data.get('activities', [])
+    locations = data.get('locations', [])
+
+    # Basic validation
+    if not worker or not date or not activities or not locations:
+        return jsonify({'error': 'Missing required fields: workerName, logDate, activities, locations'}), 400
 
     values_to_append = []
-    for entry in entries:
-        # Basic validation for required fields (you can extend this)
-        required_fields = ['date', 'worker', 'activities']
-        missing = [f for f in required_fields if f not in entry or not entry[f]]
-        if missing:
-            return jsonify({'error': f'Missing required fields: {missing}'}), 400
 
-        # Prepare row values for append, default empty strings if key missing
+    for loc in locations:
+        # For each location dict, unpack fields safely
+        phase = loc.get('phase', '')
+        zone = loc.get('zone', '')
+        line = loc.get('line', '')
+        treeID = loc.get('treeID', '')
+
+        # Compose row
         row = [
-            entry.get('date', ''),
-            entry.get('worker', ''),
-            entry.get('phase', ''),
-            entry.get('zone', ''),
-            entry.get('line', ''),
-            entry.get('treeID', ''),
-            ", ".join(entry.get('activities', []))
+            date,
+            worker,
+            phase,
+            zone,
+            line,
+            treeID,
+            ", ".join(activities)
         ]
         values_to_append.append(row)
 

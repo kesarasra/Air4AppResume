@@ -1,61 +1,81 @@
+// Utility function to go back to previous page
+function goBack(url) {
+  window.location.href = url;
+}
+
 window.onload = () => {
-  const data = {
-    worker: getFromSession('workerName'),
-    date: getFromSession('logDate'),
-    phase: getFromSession('phase'),
-    zone: getFromSession('zone'),
-    line: getFromSession('line'),
-    treeIDs: getFromSession('treeIDs') || [], // plural
-    treeID: getFromSession('treeID'),         // fallback single
-    activities: getFromSession('activities'),
-  };
+  const locationSummary = document.getElementById('location-summary');
+  const activitiesList = document.getElementById('activities-list');
 
-  const summary = document.getElementById('review-data');
+  // Retrieve saved data from session storage
+  const treeIDs = getFromSession('treeIDs') || [];
+  const phaseZoneLineSets = getFromSession('phaseZoneLineSets') || [];
+  const activities = getFromSession('activities') || [];
 
-  // Create a Tree ID display (handle both single and multiple)
-  const treeIDDisplay = data.treeIDs.length > 0
-    ? data.treeIDs.map(id => `<li>${id}</li>`).join('')
-    : `<li>${data.treeID}</li>`;
+  // Display location summary
+  if (treeIDs.length > 0) {
+    locationSummary.innerHTML = `<strong>รหัสต้นไม้ที่เลือก:</strong><br>${treeIDs.join(', ')}`;
+  } else if (phaseZoneLineSets.length > 0) {
+    locationSummary.innerHTML = `<strong>ชุดข้อมูลช่วงแปลง / โซน / เส้นที่เลือก:</strong><br>` +
+      phaseZoneLineSets.map((set, idx) =>
+        `ชุดที่ ${idx + 1}: เฟส ${set.phase || '-'} | โซน ${set.zone || '-'} | เส้น ${set.line || '-'}`
+      ).join('<br>');
+  } else {
+    locationSummary.textContent = 'ไม่มีข้อมูลสถานที่ที่เลือก กรุณากลับไปเลือกสถานที่';
+  }
 
-  summary.innerHTML = `
-    <p><strong>คนงาน:</strong> ${data.worker}</p>
-    <p><strong>วันที่:</strong> ${data.date}</p>
-    ${data.phase ? `<p><strong>เฟส:</strong> ${data.phase}</p>` : ''}
-    ${data.zone ? `<p><strong>โซน:</strong> ${data.zone}</p>` : ''}
-    ${data.line ? `<p><strong>เส้น:</strong> ${data.line}</p>` : ''}
-    <p><strong>รหัสต้นไม้:</strong></p>
-    <ul>${treeIDDisplay}</ul>
-    <p><strong>กิจกรรม:</strong> ${data.activities.join(', ')}</p>
-  `;
+  // Display activities summary
+  if (activities.length > 0) {
+    activities.forEach(act => {
+      const li = document.createElement('li');
+      li.textContent = act;
+      activitiesList.appendChild(li);
+    });
+  } else {
+    activitiesList.innerHTML = '<li>ไม่มีการเลือกกิจกรรม</li>';
+  }
 
-  document.getElementById('confirm-btn').addEventListener('click', async () => {
-    const treeIDsToSubmit = data.treeIDs.length > 0 ? data.treeIDs : [data.treeID];
+  // Confirm submit handler
+  document.getElementById('confirm-submit').addEventListener('click', async () => {
+    const workerName = getFromSession('workerName');
+    const logDate = getFromSession('logDate');
 
-    const payload = treeIDsToSubmit.map(treeID => ({
-      worker: data.worker,
-      date: data.date,
-      phase: data.phase,
-      zone: data.zone,
-      line: data.line,
-      treeID,
-      activities: data.activities
-    }));
+    if (!workerName || !logDate) {
+      alert('ข้อมูลคนงานหรือวันที่หายไป กรุณากลับไปหน้าแรกเพื่อกรอกใหม่');
+      window.location.href = 'index.html';
+      return;
+    }
+
+    // Prepare payload for submission
+    const payload = {
+      workerName,
+      logDate,
+      activities,
+      locations: treeIDs.length > 0 ? 
+        treeIDs.map(id => ({ treeID: id })) : 
+        phaseZoneLineSets.map(set => ({
+          phase: set.phase,
+          zone: set.zone,
+          line: set.line
+        }))
+    };
 
     try {
       const response = await fetch('/api/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload) // sending array of logs
+        body: JSON.stringify(payload)
       });
 
-      if (response.ok) {
-        window.location.href = 'success.html';
-      } else {
-        alert('Failed to submit data. Please try again.');
-      }
+      if (!response.ok) throw new Error('Failed to submit log');
+
+      alert('ส่งข้อมูลสำเร็จ!');
+      // Clear session data or redirect to home
+      sessionStorage.clear();
+      window.location.href = '/';
     } catch (err) {
-      alert('Error submitting data.');
-      console.error(err);
+      console.error('Error submitting log:', err);
+      alert('เกิดข้อผิดพลาดในการส่งข้อมูล กรุณาลองใหม่อีกครั้ง');
     }
   });
 };
