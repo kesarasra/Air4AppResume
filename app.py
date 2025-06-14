@@ -208,23 +208,23 @@ def submit_log():
     values_to_append = []
 
     for loc in locations:
-        # For each location dict, unpack fields safely
         phase = loc.get('phase', '')
         zone = loc.get('zone', '')
         line = loc.get('line', '')
         treeID = loc.get('treeID', '')
 
-        # Compose row
-        row = [
-            date,
-            worker,
-            phase,
-            zone,
-            line,
-            treeID,
-            ", ".join(activities)
-        ]
-        values_to_append.append(row)
+        for activity in activities:
+            row = [
+                date,
+                worker,
+                phase,
+                zone,
+                line,
+                treeID,
+                activity  # <-- each row gets a single activity
+            ]
+            values_to_append.append(row)
+
 
     service = get_service()
     sheet = service.spreadsheets()
