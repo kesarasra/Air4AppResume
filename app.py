@@ -207,11 +207,13 @@ def get_submenus(activity_id):
         range='SubMenu!A2:G'
     ).execute()
 
+
     submenus = []
     for row in result.get('values', []):
         if len(row) < 7:
             continue
-        if row[1].strip() == str(activity_id):  # Column B = Activity ID
+    
+        if row[1].strip() == str(activity_id):
             submenus.append({
                 'subNum': row[2].strip(),
                 'question': row[3].strip(),
@@ -219,6 +221,7 @@ def get_submenus(activity_id):
                 'desc': row[5].strip(),
                 'descEng': row[6].strip()
             })
+
 
     return jsonify(submenus)
 

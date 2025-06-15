@@ -11,9 +11,10 @@ document.getElementById('activity-form').addEventListener('submit', e => {
 
   saveToSession('activities', checked);
 
-  const submenuInputs = Array.from(document.querySelectorAll('input[name^="submenu-"]'));
+  // Gather submenu answers
+  const submenuInputs = Array.from(document.querySelectorAll('.submenu-container input, .submenu-container textarea'));
   const submenuAnswers = submenuInputs.reduce((acc, input) => {
-    if (input.value.trim() !== '') {
+    if (input.name && input.value.trim() !== '') {
       acc[input.name] = input.value.trim();
     }
     return acc;
@@ -52,7 +53,6 @@ window.onload = () => {
       }
 
       list.forEach(({ id, name, description }) => {
-        // 🚨 Bonus Tip: Sanitize activity ID to avoid injection
         const safeId = String(id).replace(/[^a-zA-Z0-9_-]/g, '');
 
         const div = document.createElement('div');
@@ -74,6 +74,7 @@ window.onload = () => {
       container.innerHTML = '<p>Failed to load activities. Please try again later.</p>';
     });
 
+  // Event listener for activity checkbox changes to show/hide submenu inputs
   container.addEventListener('change', async (e) => {
     const checkbox = e.target.closest('input[name="activity"]');
     if (!checkbox) return;
@@ -86,17 +87,73 @@ window.onload = () => {
         const res = await fetch(`/api/submenus/${activityId}`);
         const submenus = await res.json();
 
-        submenuContainer.innerHTML = submenus.map(sub => `
-          <div class="submenu-item">
-            <label>
-              <span class="submenu-tooltip">
-                ${sub.question}
-                <div class="tooltip-box">${sub.desc}</div>
-              </span>
-              <input type="text" name="submenu-${activityId}-${sub.subNum}" />
-            </label>
-          </div>
-        `).join('');
+        submenuContainer.innerHTML = submenus.map(sub => {
+          let inputField = '';
+          const cleanSubNum = sub.subNum.startsWith('.') ? sub.subNum.slice(1) : sub.subNum;
+
+          if (/เวลาเริ่ม|เวลาสิ้นสุด/.test(sub.question)) {
+            inputField = `<input type="time" name="submenu-${activityId}.${cleanSubNum}" required />`;
+          } else if (/ระยะเวลา/.test(sub.question)) {
+            inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" readonly placeholder="คำนวณอัตโนมัติ" />`;
+          } else {
+            inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" />`;
+          }
+
+          return `
+            <div class="submenu-item">
+              <label>
+                <span class="submenu-tooltip">
+                  ${sub.question}
+                  <div class="tooltip-box">${sub.desc}</div>
+                </span>
+                ${inputField}
+              </label>
+            </div>
+          `;
+        }).join('');
+
+
+        // After rendering inputs, add event listeners to calculate duration automatically
+        const startInput = submenuContainer.querySelector(`input[name='submenu-${activityId}.1']`);
+        const endInput = submenuContainer.querySelector(`input[name='submenu-${activityId}.2']`);
+        const durationInput = submenuContainer.querySelector(`input[name='submenu-${activityId}.3']`);
+
+
+
+        console.log('startInput:', startInput);
+        console.log('endInput:', endInput);
+        console.log('durationInput:', durationInput);
+
+
+        if (startInput && endInput && durationInput) {
+          const calculateDuration = () => {
+            console.log('Calculating duration...');
+            const start = startInput.value;
+            const end = endInput.value;
+            if (start && end) {
+              const startDate = new Date(`1970-01-01T${start}:00`);
+              const endDate = new Date(`1970-01-01T${end}:00`);
+              let diff = (endDate - startDate) / 60000; // minutes
+
+              if (diff < 0) {
+                diff += 24 * 60; // next day
+              }
+              durationInput.value = diff.toString();
+            } else {
+              durationInput.value = '';
+            }
+          };
+
+          startInput.addEventListener('input', calculateDuration);
+          startInput.addEventListener('change', calculateDuration);
+
+          endInput.addEventListener('input', calculateDuration);
+          endInput.addEventListener('change', calculateDuration);
+
+          calculateDuration();
+        }
+
+
       } catch (err) {
         console.error(`Failed to load submenus for Activity ID ${activityId}:`, err);
         submenuContainer.innerHTML = '<p>Error loading details.</p>';
@@ -106,9 +163,3 @@ window.onload = () => {
     }
   });
 };
-
-
-
-
-
-

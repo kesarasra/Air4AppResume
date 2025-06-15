@@ -11,6 +11,7 @@ window.onload = () => {
   const treeIDs = getFromSession('treeIDs') || [];
   const phaseZoneLineSets = getFromSession('phaseZoneLineSets') || [];
   const activities = getFromSession('activities') || [];
+  const submenus = getFromSession('submenus') || {};
 
   // Display location summary
   if (treeIDs.length > 0) {
@@ -24,11 +25,25 @@ window.onload = () => {
     locationSummary.textContent = 'ไม่มีข้อมูลสถานที่ที่เลือก กรุณากลับไปเลือกสถานที่';
   }
 
-  // Display activities summary
+  // Display activities and their submenus
   if (activities.length > 0) {
     activities.forEach(act => {
       const li = document.createElement('li');
-      li.textContent = act;
+      li.innerHTML = `<strong>${act}</strong>`;
+
+      const submenuList = document.createElement('ul');
+      const prefix = `submenu-${act}-`;
+      const matchingKeys = Object.keys(submenus).filter(k => k.startsWith(prefix));
+
+      matchingKeys.forEach(key => {
+        const question = key.replace(prefix, '').replace(/-/g, ' ');
+        const value = submenus[key];
+        const item = document.createElement('li');
+        item.textContent = `${question}: ${value}`;
+        submenuList.appendChild(item);
+      });
+
+      if (matchingKeys.length > 0) li.appendChild(submenuList);
       activitiesList.appendChild(li);
     });
   } else {
@@ -57,7 +72,8 @@ window.onload = () => {
           phase: set.phase,
           zone: set.zone,
           line: set.line
-        }))
+        })),
+      submenus
     };
 
     try {
@@ -70,7 +86,6 @@ window.onload = () => {
       if (!response.ok) throw new Error('Failed to submit log');
 
       alert('ส่งข้อมูลสำเร็จ!');
-      // Clear session data or redirect to home
       sessionStorage.clear();
       window.location.href = '/';
     } catch (err) {
