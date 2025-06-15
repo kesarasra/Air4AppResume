@@ -3,7 +3,7 @@ function goBack(url) {
   window.location.href = url;
 }
 
-window.onload = () => {
+window.onload = async () => {
   const locationSummary = document.getElementById('location-summary');
   const activitiesList = document.getElementById('activities-list');
 
@@ -25,27 +25,70 @@ window.onload = () => {
     locationSummary.textContent = 'ไม่มีข้อมูลสถานที่ที่เลือก กรุณากลับไปเลือกสถานที่';
   }
 
-  // Display activities and their submenus
+  // Fetch activity name -> ID map
+  let activityMap = {};
+  try {
+    const res = await fetch('/api/activities');
+    if (!res.ok) throw new Error('Failed to fetch activities');
+    const activitiesData = await res.json();
+    activitiesData.forEach(({ id, name }) => {
+      activityMap[name] = id;
+    });
+  } catch (err) {
+    console.error('Failed to fetch activities:', err);
+  }
+
+  // Fetch submenu question text for a given activity ID
+  async function fetchSubmenuQuestions(activityId) {
+    try {
+      const res = await fetch(`/api/submenus/${activityId}`);
+      if (!res.ok) throw new Error('Failed to fetch submenu questions');
+      const data = await res.json();
+      const questionMap = {};
+      data.forEach(q => {
+        const cleanSubNum = q.subNum.startsWith('.') ? q.subNum : '.' + q.subNum;
+        questionMap[cleanSubNum] = q.question;
+      });
+      return questionMap;
+    } catch (err) {
+      console.error(`Failed to fetch submenu questions for activity ${activityId}:`, err);
+      return {};
+    }
+  }
+
+  // Display activities and submenu answers
   if (activities.length > 0) {
-    activities.forEach(act => {
+    for (const actName of activities) {
       const li = document.createElement('li');
-      li.innerHTML = `<strong>${act}</strong>`;
+      li.innerHTML = `<strong>${actName}</strong>`;
+
+      const actId = activityMap[actName];
+      if (!actId) {
+        console.warn(`No matching activity ID found for name: ${actName}`);
+        continue;
+      }
+
+      const questionMap = await fetchSubmenuQuestions(actId);
 
       const submenuList = document.createElement('ul');
-      const prefix = `submenu-${act}-`;
+      const prefix = `submenu-${actId}.`;
+
       const matchingKeys = Object.keys(submenus).filter(k => k.startsWith(prefix));
 
       matchingKeys.forEach(key => {
-        const question = key.replace(prefix, '').replace(/-/g, ' ');
+        const subNum = key.replace(prefix, ''); // e.g. ".1"
+        const dotSubNum = subNum.startsWith('.') ? subNum : '.' + subNum;
+        const questionText = questionMap[dotSubNum] || `คำถาม ${subNum}`;
         const value = submenus[key];
+
         const item = document.createElement('li');
-        item.textContent = `${question}: ${value}`;
+        item.textContent = `${questionText}: ${value}`;
         submenuList.appendChild(item);
       });
 
       if (matchingKeys.length > 0) li.appendChild(submenuList);
       activitiesList.appendChild(li);
-    });
+    }
   } else {
     activitiesList.innerHTML = '<li>ไม่มีการเลือกกิจกรรม</li>';
   }
@@ -61,13 +104,18 @@ window.onload = () => {
       return;
     }
 
-    // Prepare payload for submission
+    // Create array of {name, id} objects for activities
+    const activitiesWithIds = activities.map(name => ({
+      name,
+      id: activityMap[name] || null
+    }));
+
     const payload = {
       workerName,
       logDate,
-      activities,
-      locations: treeIDs.length > 0 ? 
-        treeIDs.map(id => ({ treeID: id })) : 
+      activities: activitiesWithIds,
+      locations: treeIDs.length > 0 ?
+        treeIDs.map(id => ({ treeID: id })) :
         phaseZoneLineSets.map(set => ({
           phase: set.phase,
           zone: set.zone,
@@ -75,6 +123,7 @@ window.onload = () => {
         })),
       submenus
     };
+
 
     try {
       const response = await fetch('/api/submit', {

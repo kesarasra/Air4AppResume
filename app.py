@@ -235,17 +235,16 @@ def submit_log():
     if not data:
         return jsonify({'error': 'No data provided'}), 400
 
-    # Expecting a dict with keys: workerName, logDate, activities, locations
     worker = data.get('workerName') or data.get('worker')
     date = data.get('logDate') or data.get('date')
     activities = data.get('activities', [])
     locations = data.get('locations', [])
 
-    # Basic validation
     if not worker or not date or not activities or not locations:
         return jsonify({'error': 'Missing required fields: workerName, logDate, activities, locations'}), 400
 
     values_to_append = []
+    submenus = data.get('submenus', {})  # <-- Add this
 
     for loc in locations:
         phase = loc.get('phase', '')
@@ -254,6 +253,14 @@ def submit_log():
         treeID = loc.get('treeID', '')
 
         for activity in activities:
+            act_id = str(activity.get('id', ''))  # get ID as string
+            act_name = activity.get('name', '')
+
+            duration_key = f'submenu-{act_id}.3'
+            notes_key = f'submenu-{act_id}.4'
+            duration = submenus.get(duration_key, '')
+            notes = submenus.get(notes_key, '')
+
             row = [
                 date,
                 worker,
@@ -261,10 +268,11 @@ def submit_log():
                 zone,
                 line,
                 treeID,
-                activity  # <-- each row gets a single activity
+                act_name,
+                duration,
+                notes
             ]
             values_to_append.append(row)
-
 
     service = get_service()
     sheet = service.spreadsheets()
@@ -295,14 +303,17 @@ def admin_view_log():
         'Zone': 3,
         'Line': 4,
         'TreeID': 5,
-        'Activity': 6
+        'Activity': 6,
+        'Duration': 7,
+        'Notes': 8
     }
+
 
     service = get_service()
     sheet = service.spreadsheets()
     result = sheet.values().get(
         spreadsheetId=DAILY_LOGGER_ID,
-        range=f"{LOG_SHEET}!A1:G"  # A1:G should match your columns
+        range=f"{LOG_SHEET}!A1:I"  
     ).execute()
     
     data = result.get('values', [])
