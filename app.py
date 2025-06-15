@@ -188,6 +188,7 @@ def get_activities():
         }
         for row in rows if len(row) >= 2 and row[0].strip() and row[1].strip()
     ]
+
     return jsonify(activities)
 
 
