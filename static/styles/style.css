@@ -119,6 +119,13 @@ input[type="checkbox"][name="activity"] {
   top: 20px; 
 }
 
+.submenu-item {
+  margin-top: 10px;
+  padding-left: 15px;
+  border-left: 2px solid var(--primary);
+}
+
+
 .custom-popup {
   position: fixed;
   top: 20px;

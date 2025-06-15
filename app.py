@@ -171,19 +171,56 @@ def get_tree_ids_and_lines():
 def get_activities():
     if 'username' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
+
     service = get_service()
     sheet = service.spreadsheets()
     result = sheet.values().get(
         spreadsheetId=DAILY_LOGGER_ID,
-        range=f"{ACTIVITIES_SHEET}!A2:B"
+        range=f"{ACTIVITIES_SHEET}!A2:C"  # <-- Update range to include ID, Name, Description
     ).execute()
 
     rows = result.get('values', [])
     activities = [
-        {"name": row[0], "description": row[1] if len(row) > 1 else ""}
-        for row in rows if row and row[0].strip()
+        {
+            "id": row[0].strip(),
+            "name": row[1].strip(),
+            "description": row[2].strip() if len(row) > 2 else ""
+        }
+        for row in rows if len(row) >= 2 and row[0].strip() and row[1].strip()
     ]
     return jsonify(activities)
+
+
+@app.route('/api/submenus/<activity_id>', methods=['GET'])
+def get_submenus(activity_id):
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    if not activity_id.strip().isalnum():
+        return jsonify([])
+
+    service = get_service()
+    sheet = service.spreadsheets()
+
+    result = sheet.values().get(
+        spreadsheetId=DAILY_LOGGER_ID,
+        range='SubMenu!A2:G'
+    ).execute()
+
+    submenus = []
+    for row in result.get('values', []):
+        if len(row) < 7:
+            continue
+        if row[1].strip() == str(activity_id):  # Column B = Activity ID
+            submenus.append({
+                'subNum': row[2].strip(),
+                'question': row[3].strip(),
+                'questionEng': row[4].strip(),
+                'desc': row[5].strip(),
+                'descEng': row[6].strip()
+            })
+
+    return jsonify(submenus)
 
 
 @app.route('/api/submit', methods=['POST'])
