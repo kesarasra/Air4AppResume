@@ -76,9 +76,8 @@ window.onload = async () => {
       const matchingKeys = Object.keys(submenus).filter(k => k.startsWith(prefix));
 
       matchingKeys.forEach(key => {
-        const subNum = key.replace(prefix, ''); // e.g. ".1"
-        const dotSubNum = subNum.startsWith('.') ? subNum : '.' + subNum;
-        const questionText = questionMap[dotSubNum] || `คำถาม ${subNum}`;
+        const subNum = key.replace(prefix, ''); // e.g., "1"
+        const questionText = questionMap['.' + subNum] || `คำถาม ${subNum}`;
         const value = submenus[key];
 
         const item = document.createElement('li');

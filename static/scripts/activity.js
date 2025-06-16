@@ -12,7 +12,7 @@ document.getElementById('activity-form').addEventListener('submit', e => {
   saveToSession('activities', checked);
 
   // Gather submenu answers
-  const submenuInputs = Array.from(document.querySelectorAll('.submenu-container input, .submenu-container textarea'));
+  const submenuInputs = Array.from(document.querySelectorAll('.submenu-container input, .submenu-container textarea, .submenu-container select'));
   const submenuAnswers = submenuInputs.reduce((acc, input) => {
     if (input.name && input.value.trim() !== '') {
       acc[input.name] = input.value.trim();
@@ -95,6 +95,33 @@ window.onload = () => {
             inputField = `<input type="time" name="submenu-${activityId}.${cleanSubNum}" required />`;
           } else if (/ระยะเวลา/.test(sub.question)) {
             inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" readonly placeholder="คำนวณอัตโนมัติ" />`;
+          } else if (/6\.1/.test(sub.question)) {
+            inputField = `
+              <select name="submenu-${activityId}.${cleanSubNum}" required>
+                <option value="">-- เลือกปัญหาที่พบ --</option>
+                <option value="โรคใบไม้">โรคใบไม้</option>
+                <option value="โรคกิ่ง/ลำต้น">โรคกิ่ง/ลำต้น</option>
+                <option value="โรคผลไม้">โรคผลไม้</option>
+                <option value="พบแมลง">พบแมลง</option>
+                <option value="พบหนอน">พบหนอน</option>
+                <option value="เชื้อรา">เชื้อรา</option>
+                <option value="ความเสียหายจากภัยธรรมชาติ">ความเสียหายจากภัยธรรมชาติ</option>
+                <option value="ขาดธาตุอาหาร">ขาดธาตุอาหาร</option>
+                <option value="ปัญหาดิน">ปัญหาดิน</option>
+                <option value="ปัญหารากต้นไม้">ปัญหารากต้นไม้</option>
+                <option value="ความเครียดจากน้ำ">ความเครียดจากน้ำ</option>
+              </select>
+            `;
+          } else if (activityId === '6' && cleanSubNum === '3') {
+            inputField = `
+              <select name="submenu-${activityId}.${cleanSubNum}" required>
+                <option value="">-- โปรดเลือก --</option>
+                <option value="ใช่">ใช่</option>
+                <option value="ไม่ใช่">ไม่ใช่</option>
+              </select>
+            `;
+          } else if (/รายละเอียดเพิ่มเติม|อธิบายปัญหา|โปรดระบุ/.test(sub.question)) {
+            inputField = `<textarea name="submenu-${activityId}.${cleanSubNum}" rows="1" style="overflow:hidden;resize:none;width:100%;" oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';"></textarea>`;
           } else {
             inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" />`;
           }

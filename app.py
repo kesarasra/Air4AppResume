@@ -240,13 +240,14 @@ def submit_log():
     date = data.get('logDate') or data.get('date')
     activities = data.get('activities', [])
     locations = data.get('locations', [])
+    submenus = data.get('submenus', {})
 
     if not worker or not date or not activities or not locations:
         return jsonify({'error': 'Missing required fields: workerName, logDate, activities, locations'}), 400
 
     values_to_append = []
-    submenus = data.get('submenus', {})  # <-- Add this
 
+    # Build rows for DailyLog (all activities, unchanged)
     for loc in locations:
         phase = loc.get('phase', '')
         zone = loc.get('zone', '')
@@ -254,13 +255,8 @@ def submit_log():
         treeID = loc.get('treeID', '')
 
         for activity in activities:
-            act_id = str(activity.get('id', ''))  # get ID as string
+            act_id = str(activity.get('id', ''))
             act_name = activity.get('name', '')
-
-            duration_key = f'submenu-{act_id}.3'
-            notes_key = f'submenu-{act_id}.4'
-            duration = submenus.get(duration_key, '')
-            notes = submenus.get(notes_key, '')
 
             row = [
                 date,
@@ -269,22 +265,56 @@ def submit_log():
                 zone,
                 line,
                 treeID,
-                act_name,
-                duration,
-                notes
+                act_name
             ]
             values_to_append.append(row)
 
     service = get_service()
-    sheet = service.spreadsheets()
-    sheet.values().append(
+    sheet_service = service.spreadsheets()
+
+    # Append all activities to DailyLog (original logic, untouched)
+    sheet_service.values().append(
         spreadsheetId=DAILY_LOGGER_ID,
         range=f"{LOG_SHEET}!A1",
         valueInputOption="RAW",
         body={"values": values_to_append}
     ).execute()
 
-    return jsonify({"status": "success", "saved": len(values_to_append)})
+    # Now append TreeCare entries for Activity 6 only, now including submenu 1.3 and 1.4 as Watering Duration & Notes
+    treecare_rows = []
+    for loc in locations:
+        treeID = loc.get('treeID', '')
+        for activity in activities:
+            act_id = str(activity.get('id', ''))
+            if act_id == "6":
+                tree_problem = submenus.get(f'submenu-6.1', '')
+                problem_details = submenus.get(f'submenu-6.2', '')
+                sample_submitted = submenus.get(f'submenu-6.3', '')
+                corrective_action = submenus.get(f'submenu-6.4', '')
+
+                treecare_row = [
+                    date,
+                    worker,
+                    treeID,
+                    submenus.get(f'submenu-1.3', ''),            # D: Watering Duration from submenu 1.3
+                    submenus.get(f'submenu-1.4', ''),
+                    tree_problem,
+                    problem_details,
+                    sample_submitted,
+                    corrective_action
+                ]
+                treecare_rows.append(treecare_row)
+
+    if treecare_rows:
+        sheet_service.values().append(
+            spreadsheetId=DAILY_LOGGER_ID,
+            range="TreeCare!A1",
+            valueInputOption="RAW",
+            body={"values": treecare_rows}
+        ).execute()
+
+    return jsonify({"status": "success", "savedDailyLog": len(values_to_append), "savedTreeCare": len(treecare_rows)})
+
 
 @app.route('/admin/view-log')
 def admin_view_log():

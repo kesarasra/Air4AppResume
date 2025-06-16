@@ -114,6 +114,18 @@ input, select {
   opacity: 1;
 }
 
+#activities-list li {
+  margin-bottom: 1rem;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+#activities-list ul {
+  padding-left: 1rem;
+}
+
 input[type="checkbox"][name="activity"] {
   position: relative;
   top: 20px; 
@@ -124,7 +136,6 @@ input[type="checkbox"][name="activity"] {
   padding-left: 15px;
   border-left: 2px solid var(--primary);
 }
-
 
 .custom-popup {
   position: fixed;
