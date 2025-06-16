@@ -320,46 +320,69 @@ def submit_log():
 def admin_view_log():
     if 'username' not in session:
         return redirect('/login')
-    
+
     if session['username'] != 'admin':
         return "Access denied", 403
 
-    sort_by = request.args.get('sort_by', 'Date')  # Default to Date
+    sheet_name = request.args.get('sheet', 'DailyLog')  # 'DailyLog' or 'TreeCare'
+    sort_by = request.args.get('sort_by', 'Date')
 
-    # Mapping column names to their index (0-based)
-    column_map = {
-        'Date': 0,
-        'WorkerName': 1,
-        'Phase': 2,
-        'Zone': 3,
-        'Line': 4,
-        'TreeID': 5,
-        'Activity': 6,
-        'Duration': 7,
-        'Notes': 8
+    SHEET_MAP = {
+        'DailyLog': {
+            'range': 'DailyLog!A1:I',
+            'column_map': {
+                'Date': 0,
+                'WorkerName': 1,
+                'Phase': 2,
+                'Zone': 3,
+                'Line': 4,
+                'TreeID': 5,
+                'Activity': 6,
+                'Duration': 7,
+                'Notes': 8
+            }
+        },
+        'TreeCare': {
+            'range': 'TreeCare!A1:I',
+            'column_map': {
+                'Date': 0,
+                'Worker Name': 1,
+                'TreeID': 2,
+                'Watering Duration': 3,
+                'Notes': 4,
+                'Tree Problem': 5,
+                'Problem Details': 6,
+                'Sample Submitted': 7,
+                'Corrective Action': 8
+            }
+        }
     }
 
+    if sheet_name not in SHEET_MAP:
+        return "Invalid sheet name", 400
+
+    sheet_config = SHEET_MAP[sheet_name]
 
     service = get_service()
     sheet = service.spreadsheets()
     result = sheet.values().get(
         spreadsheetId=DAILY_LOGGER_ID,
-        range=f"{LOG_SHEET}!A1:I"  
+        range=sheet_config['range']
     ).execute()
-    
-    data = result.get('values', [])
-    # Normalize row lengths
-    if data:
-        max_len = len(data[0])  # Header length
-        for i in range(len(data)):
-            while len(data[i]) < max_len:
-                data[i].append('')  # Pad with empty strings
 
+    data = result.get('values', [])
     if not data:
-        return "No data found.", 404
+        return f"No data found in {sheet_name}.", 404
+
+    # Normalize rows
+    max_len = len(data[0])
+    for i in range(len(data)):
+        while len(data[i]) < max_len:
+            data[i].append('')
 
     headers = data[0]
     rows = data[1:]
+    col_map = sheet_config['column_map']
 
     def format_date_yyyymmdd_to_ddmmyyyy(date_str):
         parts = date_str.split('/')
@@ -369,34 +392,28 @@ def admin_view_log():
         return date_str
 
     def parse_date_yyyymmdd(date_str):
-        # Returns a comparable tuple (yyyy, mm, dd) or None if invalid
         parts = date_str.split('/')
         if len(parts) == 3:
-            yyyy, mm, dd = parts
             try:
-                return (int(yyyy), int(mm), int(dd))
+                return tuple(map(int, parts))
             except ValueError:
                 return None
         return None
 
-    # Sort rows based on the column requested
-    if sort_by in column_map:
-        col_index = column_map[sort_by]
-
+    # Perform sorting
+    if sort_by in col_map:
+        idx = col_map[sort_by]
         if sort_by == 'Date':
-            # Sort dates by parsing the original date format (YYYY/MM/DD)
-            rows.sort(key=lambda x: parse_date_yyyymmdd(x[col_index]) or (0,0,0))
+            rows.sort(key=lambda x: parse_date_yyyymmdd(x[idx]) or (0, 0, 0))
         else:
-            # Sort other columns as strings (case insensitive)
-            rows.sort(key=lambda x: x[col_index].lower() if col_index < len(x) else "")
+            rows.sort(key=lambda x: x[idx].lower() if idx < len(x) else "")
 
-    # Format the date column for display AFTER sorting
+    # Reformat dates in first column
     for row in rows:
-        if len(row) > 0:
+        if row and row[0]:
             row[0] = format_date_yyyymmdd_to_ddmmyyyy(row[0])
 
-    return render_template('view_log.html', headers=headers, rows=rows, sort_by=sort_by)
-
+    return render_template('view_log.html', headers=headers, rows=rows, sort_by=sort_by, sheet_name=sheet_name)
 
 
 if __name__ == '__main__':

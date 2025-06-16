@@ -29,6 +29,11 @@ h1 {
   color: #E2725B;
 }
 
+h2 {
+    margin-left: 20px; 
+}
+
+
 label {
   display: block;
   margin-top: 15px;
