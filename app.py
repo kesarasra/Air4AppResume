@@ -280,67 +280,31 @@ def submit_log():
         body={"values": values_to_append}
     ).execute()
 
-    # Now append TreeCare entries for Activity 6 only, now including submenu 1.3 and 1.4 as Watering Duration & Notes
     treecare_rows = []
     for loc in locations:
         treeID = loc.get('treeID', '')
-        for activity in activities:
-            act_id = str(activity.get('id', ''))
 
-            if act_id == "1":
-                watering_duration = submenus.get('submenu-1.1', '')
-                notes = submenus.get('submenu-1.2', '')
+        treecare_row = [
+            date,                                       # A: Date
+            worker,                                     # B: Worker Name
+            treeID,                                     # C: Tree ID
 
-                treecare_row = [
-                    date,                           # A
-                    worker,                         # B
-                    treeID,                         # C
-                    watering_duration,              # D: Watering Duration
-                    notes,                          # E: Notes
-                    '', '', '', '',                 # F–I (Tree problem-related: blank)
-                    '', '', '', ''                  # J–M (Trimming-related: blank)
-                ]
-                treecare_rows.append(treecare_row)
+            submenus.get('submenu-1.1', ''),            # D: Watering Duration
+            submenus.get('submenu-1.2', ''),            # E: Notes
 
-            elif act_id == "6":
-                tree_problem = submenus.get('submenu-6.1', '')
-                problem_details = submenus.get('submenu-6.2', '')
-                sample_submitted = submenus.get('submenu-6.3', '')
-                corrective_action = submenus.get('submenu-6.4', '')
+            submenus.get('submenu-6.1', ''),            # F: Tree Problem
+            submenus.get('submenu-6.2', ''),            # G: Problem Details
+            submenus.get('submenu-6.3', ''),            # H: Sample Submitted
+            submenus.get('submenu-6.4', ''),            # I: Corrective Action
 
-                treecare_row = [
-                    date,                           # A
-                    worker,                         # B
-                    treeID,                         # C
-                    '',                             # D: Watering Duration
-                    '',                             # E: Notes
-                    tree_problem,                   # F
-                    problem_details,                # G
-                    sample_submitted,               # H
-                    corrective_action,              # I
-                    '', '', '', ''                  # J–M (Trimming-related: blank)
-                ]
-                treecare_rows.append(treecare_row)
+            submenus.get('submenu-8.1', ''),            # J: Tree Trimming Code
+            submenus.get('submenu-8.2', ''),            # K: Other Workers
+            submenus.get('submenu-8.3', ''),            # L: Trimming Duration
+            submenus.get('submenu-8.4', '')             # M: Observations
+        ]
 
-            elif act_id == "8":
-                trimming_code = submenus.get('submenu-8.1', '')
-                other_worker = submenus.get('submenu-8.2', '')
-                duration = submenus.get('submenu-8.3', '')
-                observations = submenus.get('submenu-8.4', '')
+        treecare_rows.append(treecare_row)
 
-                treecare_row = [
-                    date,           # A
-                    worker,         # B
-                    treeID,         # C
-                    '',             # D: Watering Duration
-                    '',             # E: Notes
-                    '', '', '', '', # F–I: Tree problem-related: blank
-                    trimming_code,  # J
-                    other_worker,   # K
-                    duration,       # L
-                    observations    # M
-                ]
-                treecare_rows.append(treecare_row)
 
 
     if treecare_rows:
