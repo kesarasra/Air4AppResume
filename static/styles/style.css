@@ -76,7 +76,8 @@ input, select {
   cursor: pointer;
 }
 
-.activity-tooltip {
+.activity-tooltip,
+.submenu-tooltip {
   flex: 1;
   position: relative;
   display: inline-block;
@@ -84,7 +85,8 @@ input, select {
   margin-left: 20px;
 }
 
-.activity-tooltip .tooltip-box {
+.activity-tooltip .tooltip-box,
+.submenu-tooltip .tooltip-box {
   visibility: hidden;
   background-color: var(--hover);
   color: var(--text-dark);
@@ -103,7 +105,8 @@ input, select {
   font-size: 0.9rem;
 }
 
-.activity-tooltip .tooltip-box::after {
+.activity-tooltip .tooltip-box::after,
+.submenu-tooltip .tooltip-box::after {
   content: "";
   position: absolute;
   top: 100%;
@@ -114,7 +117,8 @@ input, select {
   border-color: var(--hover) transparent transparent transparent;
 }
 
-.activity-tooltip:hover .tooltip-box {
+.activity-tooltip:hover .tooltip-box,
+.submenu-tooltip:hover .tooltip-box {
   visibility: visible;
   opacity: 1;
 }
