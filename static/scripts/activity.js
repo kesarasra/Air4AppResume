@@ -18,6 +18,17 @@ document.getElementById('activity-form').addEventListener('submit', e => {
     }
     return acc;
   }, {});
+
+  // Combine multiple 'submenu-8.2' selects into one comma-separated string
+  const workerInputs = document.querySelectorAll('select[name="submenu-8.2"]');
+  const workerValues = Array.from(workerInputs)
+    .map(input => input.value.trim())
+    .filter(Boolean);
+
+  if (workerValues.length > 0) {
+    submenuAnswers['submenu-8.2'] = workerValues.join(', ');
+  }
+
   saveToSession('submenus', submenuAnswers);
 
   const worker = getFromSession('workerName');
@@ -149,9 +160,15 @@ window.onload = () => {
             `;
           } else if (activityId === '8' && cleanSubNum === '2') {
             inputField = `
-              <select name="submenu-8.2" id="submenu-8-2-select" required>
-                <option value="">-- เลือกชื่อคนงาน --</option>
-              </select>
+              <div id="submenu-8-2-container">
+                <div class="worker-select-row">
+                  <select name="submenu-8.2" class="submenu-8-2-select" required>
+                    <option value="">-- เลือกชื่อคนงาน --</option>
+                  </select>
+                  <button type="button" class="remove-worker-btn" title="ลบคนงานนี้">✖</button>
+                </div>
+                <button type="button" class="add-worker-btn" data-activity-id="8">+ เพิ่มชื่อคนงาน</button>
+              </div>
             `;
           } else if (activityId === '8' && cleanSubNum === '4') {
             inputField = `
@@ -174,19 +191,48 @@ window.onload = () => {
           `;
         }).join('');
 
-        // Populate worker names if submenu 8.2 is present
         if (activityId === '8') {
-          const workerDropdown = document.getElementById('submenu-8-2-select');
-          if (workerDropdown) {
+          const populateDropdown = (select) => {
             fetch('/api/worker-names')
               .then(res => res.json())
               .then(names => {
-                const options = names.map(name => `<option value="${name}">${name}</option>`).join('');
-                workerDropdown.innerHTML += options;
+                select.innerHTML += names.map(name => `<option value="${name}">${name}</option>`).join('');
               })
               .catch(err => {
                 console.error('Failed to load worker names:', err);
               });
+          };
+
+          // Initial dropdown
+          const firstSelect = document.querySelector('.submenu-8-2-select');
+          if (firstSelect) populateDropdown(firstSelect);
+
+          // Add worker logic
+          const addBtn = document.querySelector('.add-worker-btn');
+          const container = document.getElementById('submenu-8-2-container');
+
+          if (addBtn && container) {
+            addBtn.addEventListener('click', () => {
+              const newRow = document.createElement('div');
+              newRow.className = 'worker-select-row';
+              newRow.innerHTML = `
+                <select name="submenu-8.2" class="submenu-8-2-select" required>
+                  <option value="">-- เลือกชื่อคนงาน --</option>
+                </select>
+                <button type="button" class="remove-worker-btn" title="ลบคนงานนี้">✖</button>
+              `;
+              container.insertBefore(newRow, addBtn);
+              populateDropdown(newRow.querySelector('select'));
+            });
+
+            container.addEventListener('click', (event) => {
+              if (event.target.classList.contains('remove-worker-btn')) {
+                const row = event.target.closest('.worker-select-row');
+                if (row) {
+                  row.remove();
+                }
+              }
+            });
           }
         }
 
