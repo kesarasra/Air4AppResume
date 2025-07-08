@@ -11,7 +11,6 @@ document.getElementById('activity-form').addEventListener('submit', e => {
 
   saveToSession('activities', checked);
 
-  // Gather submenu answers
   const submenuInputs = Array.from(document.querySelectorAll('.submenu-container input, .submenu-container textarea, .submenu-container select'));
   const submenuAnswers = submenuInputs.reduce((acc, input) => {
     if (input.name && input.value.trim() !== '') {
@@ -74,7 +73,6 @@ window.onload = () => {
       container.innerHTML = '<p>Failed to load activities. Please try again later.</p>';
     });
 
-  // Event listener for activity checkbox changes to show/hide submenu inputs
   container.addEventListener('change', async (e) => {
     const checkbox = e.target.closest('input[name="activity"]');
     if (!checkbox) return;
@@ -92,10 +90,27 @@ window.onload = () => {
           const cleanSubNum = sub.subNum.startsWith('.') ? sub.subNum.slice(1) : sub.subNum;
 
           if (/เวลาเริ่ม|เวลาสิ้นสุด/.test(sub.question)) {
-            inputField = `<input type="time" name="submenu-${activityId}.${cleanSubNum}" required />`;
+            // For Activity 8, these time inputs are handled below in the 8.3 block to avoid duplicates
+            if (activityId !== '8') {
+              inputField = `<input type="time" name="submenu-${activityId}.${cleanSubNum}" required />`;
+            }
           } else if (/ระยะเวลา/.test(sub.question)) {
-            inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" readonly placeholder="คำนวณอัตโนมัติ" />`;
-          } else if (/6\.1/.test(sub.question)) {
+            if ((activityId === '8' && cleanSubNum === '3') || (activityId === '1' && cleanSubNum === '1')) {
+              inputField = `
+                <div style="margin-bottom: 6px;">
+                  <label>เวลาเริ่ม: <input type="time" id="start-${activityId}" /></label>
+                </div>
+                <div style="margin-bottom: 6px;">
+                  <label>เวลาสิ้นสุด: <input type="time" id="end-${activityId}" /></label>
+                </div>
+                <div style="margin-bottom: 6px;">
+                  <label>ระยะเวลา (นาที): <input type="text" name="submenu-${activityId}.${cleanSubNum}" readonly placeholder="คำนวณอัตโนมัติ" /></label>
+                </div>
+              `;
+            } else {
+              inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" readonly placeholder="คำนวณอัตโนมัติ" />`;
+            }
+          } else if (activityId === '6' && cleanSubNum === '1') {
             inputField = `
               <select name="submenu-${activityId}.${cleanSubNum}" required>
                 <option value="">-- เลือกปัญหาที่พบ --</option>
@@ -120,8 +135,28 @@ window.onload = () => {
                 <option value="ไม่ใช่">ไม่ใช่</option>
               </select>
             `;
-          } else if (/รายละเอียดเพิ่มเติม|อธิบายปัญหา|โปรดระบุ/.test(sub.question)) {
-            inputField = `<textarea name="submenu-${activityId}.${cleanSubNum}" rows="1" style="overflow:hidden;resize:none;width:100%;" oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';"></textarea>`;
+          } else if (activityId === '8' && cleanSubNum === '1') {
+            inputField = `
+              <select name="submenu-8.1" required>
+                <option value="">-- เลือกประเภทงานตัดแต่ง --</option>
+                <option value="TP01">TP01</option>
+                <option value="TP02">TP02</option>
+                <option value="TP03">TP03</option>
+                <option value="TP04">TP04</option>
+                <option value="TP05">TP05</option>
+                <option value="TP06">TP06</option>
+              </select>
+            `;
+          } else if (activityId === '8' && cleanSubNum === '2') {
+            inputField = `
+              <select name="submenu-8.2" id="submenu-8-2-select" required>
+                <option value="">-- เลือกชื่อคนงาน --</option>
+              </select>
+            `;
+          } else if (activityId === '8' && cleanSubNum === '4') {
+            inputField = `
+              <textarea name="submenu-8.4" rows="1" style="overflow:hidden;resize:none;width:100%;" oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';"></textarea>
+            `;
           } else {
             inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" />`;
           }
@@ -139,32 +174,37 @@ window.onload = () => {
           `;
         }).join('');
 
+        // Populate worker names if submenu 8.2 is present
+        if (activityId === '8') {
+          const workerDropdown = document.getElementById('submenu-8-2-select');
+          if (workerDropdown) {
+            fetch('/api/worker-names')
+              .then(res => res.json())
+              .then(names => {
+                const options = names.map(name => `<option value="${name}">${name}</option>`).join('');
+                workerDropdown.innerHTML += options;
+              })
+              .catch(err => {
+                console.error('Failed to load worker names:', err);
+              });
+          }
+        }
 
-        // After rendering inputs, add event listeners to calculate duration automatically
-        const startInput = submenuContainer.querySelector(`input[name='submenu-${activityId}.1']`);
-        const endInput = submenuContainer.querySelector(`input[name='submenu-${activityId}.2']`);
-        const durationInput = submenuContainer.querySelector(`input[name='submenu-${activityId}.3']`);
-
-
-
-        console.log('startInput:', startInput);
-        console.log('endInput:', endInput);
-        console.log('durationInput:', durationInput);
-
+        ['1', '8'].forEach(id => {
+          const startInput = submenuContainer.querySelector(`#start-${id}`);
+          const endInput = submenuContainer.querySelector(`#end-${id}`);
+          const durationInput = submenuContainer.querySelector(`input[name='submenu-${id}.1']`) || 
+                                submenuContainer.querySelector(`input[name='submenu-${id}.3']`);
 
         if (startInput && endInput && durationInput) {
           const calculateDuration = () => {
-            console.log('Calculating duration...');
             const start = startInput.value;
             const end = endInput.value;
             if (start && end) {
               const startDate = new Date(`1970-01-01T${start}:00`);
               const endDate = new Date(`1970-01-01T${end}:00`);
-              let diff = (endDate - startDate) / 60000; // minutes
-
-              if (diff < 0) {
-                diff += 24 * 60; // next day
-              }
+              let diff = (endDate - startDate) / 60000;
+              if (diff < 0) diff += 24 * 60;
               durationInput.value = diff.toString();
             } else {
               durationInput.value = '';
@@ -173,14 +213,12 @@ window.onload = () => {
 
           startInput.addEventListener('input', calculateDuration);
           startInput.addEventListener('change', calculateDuration);
-
           endInput.addEventListener('input', calculateDuration);
           endInput.addEventListener('change', calculateDuration);
 
           calculateDuration();
         }
-
-
+      });
       } catch (err) {
         console.error(`Failed to load submenus for Activity ID ${activityId}:`, err);
         submenuContainer.innerHTML = '<p>Error loading details.</p>';

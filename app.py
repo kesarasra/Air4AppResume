@@ -286,24 +286,62 @@ def submit_log():
         treeID = loc.get('treeID', '')
         for activity in activities:
             act_id = str(activity.get('id', ''))
-            if act_id == "6":
-                tree_problem = submenus.get(f'submenu-6.1', '')
-                problem_details = submenus.get(f'submenu-6.2', '')
-                sample_submitted = submenus.get(f'submenu-6.3', '')
-                corrective_action = submenus.get(f'submenu-6.4', '')
+
+            if act_id == "1":
+                watering_duration = submenus.get('submenu-1.1', '')
+                notes = submenus.get('submenu-1.2', '')
 
                 treecare_row = [
-                    date,
-                    worker,
-                    treeID,
-                    submenus.get(f'submenu-1.3', ''),            # D: Watering Duration from submenu 1.3
-                    submenus.get(f'submenu-1.4', ''),
-                    tree_problem,
-                    problem_details,
-                    sample_submitted,
-                    corrective_action
+                    date,                           # A
+                    worker,                         # B
+                    treeID,                         # C
+                    watering_duration,              # D: Watering Duration
+                    notes,                          # E: Notes
+                    '', '', '', '',                 # F–I (Tree problem-related: blank)
+                    '', '', '', ''                  # J–M (Trimming-related: blank)
                 ]
                 treecare_rows.append(treecare_row)
+
+            elif act_id == "6":
+                tree_problem = submenus.get('submenu-6.1', '')
+                problem_details = submenus.get('submenu-6.2', '')
+                sample_submitted = submenus.get('submenu-6.3', '')
+                corrective_action = submenus.get('submenu-6.4', '')
+
+                treecare_row = [
+                    date,                           # A
+                    worker,                         # B
+                    treeID,                         # C
+                    '',                             # D: Watering Duration
+                    '',                             # E: Notes
+                    tree_problem,                   # F
+                    problem_details,                # G
+                    sample_submitted,               # H
+                    corrective_action,              # I
+                    '', '', '', ''                  # J–M (Trimming-related: blank)
+                ]
+                treecare_rows.append(treecare_row)
+
+            elif act_id == "8":
+                trimming_code = submenus.get('submenu-8.1', '')
+                other_worker = submenus.get('submenu-8.2', '')
+                duration = submenus.get('submenu-8.3', '')
+                observations = submenus.get('submenu-8.4', '')
+
+                treecare_row = [
+                    date,           # A
+                    worker,         # B
+                    treeID,         # C
+                    '',             # D: Watering Duration
+                    '',             # E: Notes
+                    '', '', '', '', # F–I: Tree problem-related: blank
+                    trimming_code,  # J
+                    other_worker,   # K
+                    duration,       # L
+                    observations    # M
+                ]
+                treecare_rows.append(treecare_row)
+
 
     if treecare_rows:
         sheet_service.values().append(
@@ -343,7 +381,7 @@ def admin_view_log():
             }
         },
         'TreeCare': {
-            'range': 'TreeCare!A1:I',
+            'range': 'TreeCare!A1:M',
             'column_map': {
                 'Date': 0,
                 'Worker Name': 1,
@@ -353,7 +391,11 @@ def admin_view_log():
                 'Tree Problem': 5,
                 'Problem Details': 6,
                 'Sample Submitted': 7,
-                'Corrective Action': 8
+                'Corrective Action': 8,
+                'Tree Trimming Code': 9,
+                'Other Workers': 10,
+                'Trimming Duration': 11,
+                'Observations': 12
             }
         }
     }

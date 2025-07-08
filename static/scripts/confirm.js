@@ -1,4 +1,3 @@
-// Utility function to go back to previous page
 function goBack(url) {
   window.location.href = url;
 }
