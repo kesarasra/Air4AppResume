@@ -165,7 +165,7 @@ window.onload = () => {
                   <select name="submenu-8.2" class="submenu-8-2-select" required>
                     <option value="">-- เลือกชื่อคนงาน --</option>
                   </select>
-                  <button type="button" class="remove-worker-btn" title="ลบคนงานนี้">✖</button>
+                  <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
                 </div>
                 <button type="button" class="add-worker-btn" data-activity-id="8">+ เพิ่มชื่อคนงาน</button>
               </div>
@@ -219,14 +219,14 @@ window.onload = () => {
                 <select name="submenu-8.2" class="submenu-8-2-select" required>
                   <option value="">-- เลือกชื่อคนงาน --</option>
                 </select>
-                <button type="button" class="remove-worker-btn" title="ลบคนงานนี้">✖</button>
+                <button type="button" class="remove-btn" title="ลบ">X</button>
               `;
               container.insertBefore(newRow, addBtn);
               populateDropdown(newRow.querySelector('select'));
             });
 
             container.addEventListener('click', (event) => {
-              if (event.target.classList.contains('remove-worker-btn')) {
+              if (event.target.classList.contains('remove-btn')) {
                 const row = event.target.closest('.worker-select-row');
                 if (row) {
                   row.remove();
