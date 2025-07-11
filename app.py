@@ -245,40 +245,52 @@ def submit_log():
     if not worker or not date or not activities or not locations:
         return jsonify({'error': 'Missing required fields: workerName, logDate, activities, locations'}), 400
 
-    values_to_append = []
-
-    # Build rows for DailyLog (all activities, unchanged)
-    for loc in locations:
-        phase = loc.get('phase', '')
-        zone = loc.get('zone', '')
-        line = loc.get('line', '')
-        treeID = loc.get('treeID', '')
-
-        for activity in activities:
-            act_id = str(activity.get('id', ''))
-            act_name = activity.get('name', '')
-
-            row = [
-                date,
-                worker,
-                phase,
-                zone,
-                line,
-                treeID,
-                act_name
-            ]
-            values_to_append.append(row)
-
     service = get_service()
     sheet_service = service.spreadsheets()
 
-    # Append all activities to DailyLog (original logic, untouched)
+    def unique_preserve_order(seq):
+        seen = set()
+        return [x for x in seq if not (x in seen or seen.add(x))]
+
+    phases, zones, lines, treeIDs = [], [], [], []
+
+    for loc in locations:
+        phase = loc.get('phase', '').strip()
+        zone = loc.get('zone', '').strip()
+        line = loc.get('line', '').strip()
+        treeID = loc.get('treeID', '').strip()
+
+        if phase: phases.append(phase)
+        if zone: zones.append(zone)
+        if line: lines.append(line)
+        if treeID: treeIDs.append(treeID)
+
+    # Remove duplicates but preserve input order
+    phases = unique_preserve_order(phases)
+    zones = unique_preserve_order(zones)
+    lines = unique_preserve_order(lines)
+    treeIDs = unique_preserve_order(treeIDs)
+
+    activity_names = [act.get('name', '').strip() for act in activities if act.get('name')]
+
+    daily_log_row = [
+        date,
+        worker,
+        ','.join(phases),
+        ','.join(zones),
+        ','.join(lines),
+        ','.join(treeIDs),
+        ','.join(activity_names)
+    ]
+
+    # Save to DailyLog
     sheet_service.values().append(
         spreadsheetId=DAILY_LOGGER_ID,
         range=f"{LOG_SHEET}!A1",
         valueInputOption="RAW",
-        body={"values": values_to_append}
+        body={"values": [daily_log_row]}
     ).execute()
+
 
     treecare_rows = []
 
@@ -345,7 +357,7 @@ def submit_log():
 
     return jsonify({
     "status": "success",
-    "savedDailyLog": len(values_to_append),
+    "savedDailyLog": 1,
     "savedTreeCare": len(treecare_rows),
     "savedGardenCare": len(gardencare_rows)
 })
