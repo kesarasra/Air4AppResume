@@ -296,11 +296,8 @@ def submit_log():
 
 
     treecare_rows = []
-    for activity in activities:
-        act_id = str(activity.get('id'))
-        if act_id not in ['6', '8']:
-            continue  # skip unless TreeCare activity
 
+    if any(str(act.get('id')) in ['6', '8'] for act in activities):
         treecare_row = [
             log_id,
             date,
