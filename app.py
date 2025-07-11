@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, send_from_directory, session, redirect, url_for, render_template_string, render_template
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-import os, json
+import os, json, uuid
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('APP_SECRET_KEY', 'default_secret_key')
@@ -245,6 +245,8 @@ def submit_log():
     if not worker or not date or not activities or not locations:
         return jsonify({'error': 'Missing required fields: workerName, logDate, activities, locations'}), 400
 
+    log_id = str(uuid.uuid4())[:8]
+
     service = get_service()
     sheet_service = service.spreadsheets()
 
@@ -274,6 +276,7 @@ def submit_log():
     activity_names = [act.get('name', '').strip() for act in activities if act.get('name')]
 
     daily_log_row = [
+        log_id,
         date,
         worker,
         ','.join(phases),
@@ -293,34 +296,28 @@ def submit_log():
 
 
     treecare_rows = []
-
-    # Only populate TreeCare if relevant activities are selected
     for activity in activities:
         act_id = str(activity.get('id'))
-        if act_id not in ['6', '8']:  # Add others if needed
-            continue
+        if act_id not in ['6', '8']:
+            continue  # skip unless TreeCare activity
 
-        for loc in locations:
-            treeID = loc.get('treeID', '')
-
-            treecare_row = [
-                date,
-                worker,
-                treeID,
-                submenus.get('submenu-1.1', ''),   # Watering Duration
-                submenus.get('submenu-1.2', ''),   # Notes
-                submenus.get('submenu-6.1', ''),   # Tree Problem
-                submenus.get('submenu-6.2', ''),   # Problem Details
-                submenus.get('submenu-6.3', ''),   # Sample Submitted
-                submenus.get('submenu-6.4', ''),   # Corrective Action
-                submenus.get('submenu-8.1', ''),   # Tree Trimming Code
-                submenus.get('submenu-8.2', ''),   # Other Workers
-                submenus.get('submenu-8.3', ''),   # Trimming Duration
-                submenus.get('submenu-8.4', '')    # Observations
-            ]
-
-            treecare_rows.append(treecare_row)
-
+        treecare_row = [
+            log_id,
+            date,
+            worker,
+            submenus.get('submenu-1.1', ''),  # Watering Duration
+            submenus.get('submenu-1.2', ''),  # Notes
+            submenus.get('submenu-6.1', ''),  # Tree Problem
+            submenus.get('submenu-6.2', ''),  # Problem Details
+            submenus.get('submenu-6.3', ''),  # Sample Submitted
+            submenus.get('submenu-6.4', ''),  # Corrective Action
+            submenus.get('submenu-8.1', ''),  # Tree Trimming Code
+            submenus.get('submenu-8.2', ''),  # Other Workers
+            submenus.get('submenu-8.3', ''),  # Trimming Duration
+            submenus.get('submenu-8.4', '')   # Observations
+        ]
+        treecare_rows.append(treecare_row)
+    
     if treecare_rows:
         sheet_service.values().append(
             spreadsheetId=DAILY_LOGGER_ID,
@@ -333,6 +330,7 @@ def submit_log():
     for activity in activities:
             if activity.get('id') == '7':
                 gc_row = [
+                    log_id,
                     date,                                         # A: Date
                     worker,                                       # B: Worker Name
                     submenus.get('submenu-7.2', ''),              # C: Other Workers (number or names)
@@ -357,6 +355,7 @@ def submit_log():
 
     return jsonify({
     "status": "success",
+    "log_id": log_id,
     "savedDailyLog": 1,
     "savedTreeCare": len(treecare_rows),
     "savedGardenCare": len(gardencare_rows)
