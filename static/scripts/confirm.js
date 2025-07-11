@@ -11,6 +11,11 @@ window.onload = async () => {
   const phaseZoneLineSets = getFromSession('phaseZoneLineSets') || [];
   const activities = getFromSession('activities') || [];
   const submenus = getFromSession('submenus') || {};
+  const extraSubmenuLabels = {
+    'submenu-7.6': '7.6 ชื่อสารเคมี',
+    'submenu-7.7': '7.7 ปริมาณที่ใช้',
+    'submenu-7.8': '7.8 ขนาดถัง'
+  };
 
   // Display location summary
   if (treeIDs.length > 0) {
@@ -76,7 +81,8 @@ window.onload = async () => {
 
       matchingKeys.forEach(key => {
         const subNum = key.replace(prefix, ''); // e.g., "1"
-        const questionText = questionMap['.' + subNum] || `คำถาม ${subNum}`;
+        const fullKey = prefix + subNum;  
+        const questionText = extraSubmenuLabels[fullKey] || questionMap['.' + subNum] || `คำถาม ${subNum}`;
         const value = submenus[key];
 
         const item = document.createElement('li');

@@ -19,15 +19,12 @@ document.getElementById('activity-form').addEventListener('submit', e => {
     return acc;
   }, {});
 
-  // Combine multiple 'submenu-8.2' selects into one comma-separated string
-  const workerInputs = document.querySelectorAll('select[name="submenu-8.2"]');
-  const workerValues = Array.from(workerInputs)
-    .map(input => input.value.trim())
-    .filter(Boolean);
-
-  if (workerValues.length > 0) {
-    submenuAnswers['submenu-8.2'] = workerValues.join(', ');
-  }
+  // Collect multi-selects for 8.2 and 7.2
+  ['submenu-8.2', 'submenu-7.2'].forEach(name => {
+    const workerInputs = document.querySelectorAll(`select[name="${name}"]`);
+    const workerValues = Array.from(workerInputs).map(input => input.value.trim()).filter(Boolean);
+    if (workerValues.length > 0) submenuAnswers[name] = workerValues.join(', ');
+  });
 
   saveToSession('submenus', submenuAnswers);
 
@@ -146,6 +143,49 @@ window.onload = () => {
                 <option value="ไม่ใช่">ไม่ใช่</option>
               </select>
             `;
+          } else if (activityId === '7' && cleanSubNum === '1') {
+            inputField = `
+              <select name="submenu-7.1" id="submenu-7.1" required>
+                <option value="">-- เลือกรหัสกิจกรรม --</option>
+                <option value="ตัดหญ้า">GC01 - ตัดหญ้า</option>
+                <option value="เก็บขยะ">GC02 - เก็บขยะ</option>
+                <option value="ปรับพื้นที่">GC03 - ปรับพื้นที่</option>
+                <option value="ทำความสะอาดบ่อน้ำ">GC04 - ทำความสะอาดบ่อน้ำ</option>
+                <option value="ซ่อมแซมระบบน้ำ">GC05 - ซ่อมแซมระบบน้ำ</option>
+                <option value="งานทั่วไป">GC06 - งานทั่วไป</option>
+                <option value="พ่นสารเคมี">GC07 - พ่นสารเคมี</option>
+                <option value="ดูแลทางเดิน">GC08 - ดูแลทางเดิน</option>
+                <option value="อื่นๆ">GC09 - อื่นๆ</option>
+              </select>
+            `;
+          } else if (activityId === '7' && cleanSubNum === '2') {
+            inputField = `
+              <div id="submenu-7-2-container">
+                <div class="worker-select-row">
+                  <select name="submenu-7.2" class="submenu-7-2-select" required>
+                    <option value="">-- เลือกชื่อคนงาน --</option>
+                  </select>
+                  <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
+                </div>
+                <button type="button" class="add-worker-btn" data-activity-id="7">+ เพิ่มชื่อคนงาน</button>
+              </div>
+            `;
+          } else if (activityId === '7' && cleanSubNum === '3') {
+            inputField = `<input type="text" name="submenu-7.3" />`;
+          } else if (activityId === '7' && cleanSubNum === '4') {
+            inputField = `
+              <div style="margin-bottom: 6px;">
+                <label>เวลาเริ่ม: <input type="time" id="start-7" /></label>
+              </div>
+              <div style="margin-bottom: 6px;">
+                <label>เวลาสิ้นสุด: <input type="time" id="end-7" /></label>
+              </div>
+              <div style="margin-bottom: 6px;">
+                <label>ระยะเวลา (นาที): 
+                  <input type="text" name="submenu-7.4" readonly placeholder="คำนวณอัตโนมัติ" />
+                </label>
+              </div>
+            `;
           } else if (activityId === '8' && cleanSubNum === '1') {
             inputField = `
               <select name="submenu-8.1" required>
@@ -191,57 +231,101 @@ window.onload = () => {
           `;
         }).join('');
 
-        if (activityId === '8') {
-          const populateDropdown = (select) => {
-            fetch('/api/worker-names')
-              .then(res => res.json())
-              .then(names => {
-                select.innerHTML += names.map(name => `<option value="${name}">${name}</option>`).join('');
-              })
-              .catch(err => {
-                console.error('Failed to load worker names:', err);
+        if (activityId === '7') {
+          submenuContainer.innerHTML += `
+            <div id="gc07-extra-fields" style="display:none; margin-top:10px; padding-left:10px; border-left:2px solid #ccc;">
+              <div class="submenu-item">
+                <label>7.6 ชื่อสารเคมี:
+                  <input type="text" name="submenu-7.6" />
+                </label>
+              </div>
+              <div class="submenu-item">
+                <label>7.7 ปริมาณที่ใช้:
+                  <input type="text" name="submenu-7.7" />
+                </label>
+              </div>
+              <div class="submenu-item">
+                <label>7.8 ขนาดถัง:
+                  <input type="text" name="submenu-7.8" />
+                </label>
+              </div>
+            </div>
+          `;
+
+          const gc07Select = submenuContainer.querySelector('[id="submenu-7.1"]');
+          const extraFields = submenuContainer.querySelector('#gc07-extra-fields');
+
+          if (gc07Select && extraFields) {
+            const toggleGC07Fields = () => {
+              extraFields.style.display = gc07Select.value === 'พ่นสารเคมี' ? 'block' : 'none';
+            };
+            gc07Select.addEventListener('change', toggleGC07Fields);
+            toggleGC07Fields(); // initial state
+          }
+        }
+
+        ['7', '8'].forEach(id => {
+          const selectorClass = `.submenu-${id}-2-select`;
+          const selects = submenuContainer.querySelectorAll(selectorClass);
+
+          fetch('/api/worker-names')
+            .then(res => res.json())
+            .then(names => {
+              selects.forEach(select => {
+                names.forEach(name => {
+                  const option = document.createElement('option');
+                  option.value = name;
+                  option.textContent = name;
+                  select.appendChild(option);
+                });
               });
-          };
+            });
 
-          // Initial dropdown
-          const firstSelect = document.querySelector('.submenu-8-2-select');
-          if (firstSelect) populateDropdown(firstSelect);
-
-          // Add worker logic
-          const addBtn = document.querySelector('.add-worker-btn');
-          const container = document.getElementById('submenu-8-2-container');
+          const container = submenuContainer.querySelector(`#submenu-${id}-2-container`);
+          const addBtn = submenuContainer.querySelector(`.add-worker-btn[data-activity-id="${id}"]`);
 
           if (addBtn && container) {
             addBtn.addEventListener('click', () => {
-              const newRow = document.createElement('div');
-              newRow.className = 'worker-select-row';
-              newRow.innerHTML = `
-                <select name="submenu-8.2" class="submenu-8-2-select" required>
+              const row = document.createElement('div');
+              row.className = 'worker-select-row';
+              row.innerHTML = `
+                <select name="submenu-${id}.2" class="submenu-${id}-2-select" required>
                   <option value="">-- เลือกชื่อคนงาน --</option>
                 </select>
                 <button type="button" class="remove-btn" title="ลบ">X</button>
               `;
-              container.insertBefore(newRow, addBtn);
-              populateDropdown(newRow.querySelector('select'));
+              container.insertBefore(row, addBtn);
+              fetch('/api/worker-names')
+                .then(res => res.json())
+                .then(names => {
+                  names.forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    row.querySelector('select').appendChild(option);
+                  });
+                });
             });
 
-            container.addEventListener('click', (event) => {
-              if (event.target.classList.contains('remove-btn')) {
-                const row = event.target.closest('.worker-select-row');
-                if (row) {
-                  row.remove();
-                }
+            container.addEventListener('click', e => {
+              if (e.target.classList.contains('remove-btn')) {
+                const row = e.target.closest('.worker-select-row');
+                if (row) row.remove();
               }
             });
           }
-        }
+        });
 
-        ['1', '8'].forEach(id => {
+        ['1', '7', '8'].forEach(id => {
           const startInput = submenuContainer.querySelector(`#start-${id}`);
           const endInput = submenuContainer.querySelector(`#end-${id}`);
-          const durationInput = submenuContainer.querySelector(`input[name='submenu-${id}.1']`) || 
-                                submenuContainer.querySelector(`input[name='submenu-${id}.3']`);
-
+          let durationInput;
+          if (id === '7') {
+            durationInput = submenuContainer.querySelector(`input[name='submenu-7.4']`);
+          } else {
+            durationInput = submenuContainer.querySelector(`input[name='submenu-${id}.1']`) || 
+                            submenuContainer.querySelector(`input[name='submenu-${id}.3']`);
+          }
         if (startInput && endInput && durationInput) {
           const calculateDuration = () => {
             const start = startInput.value;

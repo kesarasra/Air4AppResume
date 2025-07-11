@@ -222,7 +222,7 @@ def get_submenus(activity_id):
                 'desc': row[5].strip(),
                 'descEng': row[6].strip()
             })
-
+    
 
     return jsonify(submenus)
 
@@ -281,31 +281,33 @@ def submit_log():
     ).execute()
 
     treecare_rows = []
-    for loc in locations:
-        treeID = loc.get('treeID', '')
 
-        treecare_row = [
-            date,                                       # A: Date
-            worker,                                     # B: Worker Name
-            treeID,                                     # C: Tree ID
+    # Only populate TreeCare if relevant activities are selected
+    for activity in activities:
+        act_id = str(activity.get('id'))
+        if act_id not in ['6', '8']:  # Add others if needed
+            continue
 
-            submenus.get('submenu-1.1', ''),            # D: Watering Duration
-            submenus.get('submenu-1.2', ''),            # E: Notes
+        for loc in locations:
+            treeID = loc.get('treeID', '')
 
-            submenus.get('submenu-6.1', ''),            # F: Tree Problem
-            submenus.get('submenu-6.2', ''),            # G: Problem Details
-            submenus.get('submenu-6.3', ''),            # H: Sample Submitted
-            submenus.get('submenu-6.4', ''),            # I: Corrective Action
+            treecare_row = [
+                date,
+                worker,
+                treeID,
+                submenus.get('submenu-1.1', ''),   # Watering Duration
+                submenus.get('submenu-1.2', ''),   # Notes
+                submenus.get('submenu-6.1', ''),   # Tree Problem
+                submenus.get('submenu-6.2', ''),   # Problem Details
+                submenus.get('submenu-6.3', ''),   # Sample Submitted
+                submenus.get('submenu-6.4', ''),   # Corrective Action
+                submenus.get('submenu-8.1', ''),   # Tree Trimming Code
+                submenus.get('submenu-8.2', ''),   # Other Workers
+                submenus.get('submenu-8.3', ''),   # Trimming Duration
+                submenus.get('submenu-8.4', '')    # Observations
+            ]
 
-            submenus.get('submenu-8.1', ''),            # J: Tree Trimming Code
-            submenus.get('submenu-8.2', ''),            # K: Other Workers
-            submenus.get('submenu-8.3', ''),            # L: Trimming Duration
-            submenus.get('submenu-8.4', '')             # M: Observations
-        ]
-
-        treecare_rows.append(treecare_row)
-
-
+            treecare_rows.append(treecare_row)
 
     if treecare_rows:
         sheet_service.values().append(
@@ -315,7 +317,39 @@ def submit_log():
             body={"values": treecare_rows}
         ).execute()
 
-    return jsonify({"status": "success", "savedDailyLog": len(values_to_append), "savedTreeCare": len(treecare_rows)})
+    gardencare_rows = []
+    for activity in activities:
+            if activity.get('id') == '7':
+                gc_row = [
+                    date,                                         # A: Date
+                    worker,                                       # B: Worker Name
+                    submenus.get('submenu-7.2', ''),              # C: Other Workers (number or names)
+                    submenus.get('submenu-7.1', ''),              # D: Activity (GC01, GC02, etc)
+                    submenus.get('submenu-7.3', ''),              # E: Equipment
+                    submenus.get('submenu-7.4', ''),              # F: Duration (minutes)
+                    submenus.get('submenu-7.5', ''),              # G: Notes
+                    submenus.get('submenu-7.6', ''),              # H: Chemical Name
+                    submenus.get('submenu-7.7', ''),              # I: Amount Used
+                    submenus.get('submenu-7.8', '')               # J: Tank Size
+                ]
+                gardencare_rows.append(gc_row)
+
+    if gardencare_rows:
+            sheet_service.values().append(
+                spreadsheetId=DAILY_LOGGER_ID,
+                range="GardenCare!A1",
+                valueInputOption="RAW",
+                body={"values": gardencare_rows}
+            ).execute()
+
+
+    return jsonify({
+    "status": "success",
+    "savedDailyLog": len(values_to_append),
+    "savedTreeCare": len(treecare_rows),
+    "savedGardenCare": len(gardencare_rows)
+})
+
 
 
 @app.route('/admin/view-log')
@@ -360,6 +394,21 @@ def admin_view_log():
                 'Other Workers': 10,
                 'Trimming Duration': 11,
                 'Observations': 12
+            }
+        },
+        'GardenCare': {
+            'range': 'GardenCare!A1:J',  # adjust range as needed
+            'column_map': {
+                'Date': 0,
+                'Worker Name': 1,
+                'Other Workers': 2,
+                'Activity': 3,
+                'Equipment': 4,
+                'Duration': 5,
+                'Notes': 6,
+                'Chemical Name': 7,
+                'Amount Used': 8,
+                'Tank Size': 9
             }
         }
     }
