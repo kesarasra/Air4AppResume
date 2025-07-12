@@ -306,8 +306,9 @@ def submit_log():
             submenus.get('submenu-1.2', ''),  # Notes
             submenus.get('submenu-6.1', ''),  # Tree Problem
             submenus.get('submenu-6.2', ''),  # Problem Details
-            submenus.get('submenu-6.3', ''),  # Sample Submitted
-            submenus.get('submenu-6.4', ''),  # Corrective Action
+            submenus.get('submenu-6.3', ''),  # 🔸 Severity of Problem (radio buttons)
+            submenus.get('submenu-6.4', ''),  # Sample Submitted
+            submenus.get('submenu-6.5', ''),  # Corrective Action
             submenus.get('submenu-8.1', ''),  # Tree Trimming Code
             submenus.get('submenu-8.2', ''),  # Other Workers
             submenus.get('submenu-8.3', ''),  # Trimming Duration
@@ -431,50 +432,52 @@ def admin_view_log():
 
     SHEET_MAP = {
         'DailyLog': {
-            'range': 'DailyLog!A1:I',
+            'range': 'DailyLog!A1:H',
             'column_map': {
-                'Date': 0,
-                'WorkerName': 1,
-                'Phase': 2,
-                'Zone': 3,
-                'Line': 4,
-                'TreeID': 5,
-                'Activity': 6,
-                'Duration': 7,
-                'Notes': 8
+                'Log ID': 0,
+                'Date': 1,
+                'WorkerName': 2,
+                'Phase': 3,
+                'Zone': 4,
+                'Line': 5,
+                'TreeID': 6,
+                'Activity': 7
             }
         },
         'TreeCare': {
-            'range': 'TreeCare!A1:M',
+            'range': 'TreeCare!A1:N',
             'column_map': {
-                'Date': 0,
-                'Worker Name': 1,
-                'TreeID': 2,
-                'Watering Duration': 3,
-                'Notes': 4,
-                'Tree Problem': 5,
-                'Problem Details': 6,
-                'Sample Submitted': 7,
-                'Corrective Action': 8,
-                'Tree Trimming Code': 9,
-                'Other Workers': 10,
-                'Trimming Duration': 11,
-                'Observations': 12
+                'Log ID': 0,
+                'Date': 1,
+                'Worker Name': 2,
+                'TreeID': 3,
+                'Watering Duration': 4,
+                'Notes': 5,
+                'Tree Problem': 6,
+                'Problem Details': 7,
+                'Problem Severity': 8,
+                'Sample Submitted': 9,
+                'Corrective Action': 10,
+                'Tree Trimming Code': 11,
+                'Other Workers': 12,
+                'Trimming Duration': 13,
+                'Observations': 14
             }
         },
         'GardenCare': {
-            'range': 'GardenCare!A1:J',  # adjust range as needed
+            'range': 'GardenCare!A1:K',  # adjust range as needed
             'column_map': {
-                'Date': 0,
-                'Worker Name': 1,
-                'Other Workers': 2,
-                'Activity': 3,
-                'Equipment': 4,
-                'Duration': 5,
-                'Notes': 6,
-                'Chemical Name': 7,
-                'Amount Used': 8,
-                'Tank Size': 9
+                'Log ID': 0,
+                'Date': 1,
+                'Worker Name': 2,
+                'Other Workers': 3,
+                'Activity': 4,
+                'Equipment': 5,
+                'Duration': 6,
+                'Notes': 7,
+                'Chemical Name': 8,
+                'Amount Used': 9,
+                'Tank Size': 10
             }
         },
         'Fruit/FlowerCare': {

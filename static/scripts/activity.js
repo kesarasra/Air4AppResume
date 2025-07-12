@@ -4,20 +4,26 @@ document.getElementById('activity-form').addEventListener('submit', e => {
   const checked = Array.from(document.querySelectorAll('input[name="activity"]:checked'))
     .map(cb => cb.value);
 
-  if (checked.length < 1 || checked.length > 5) {
-    alert("Please select between 1 and 5 activities.");
+  if (checked.length < 1 || checked.length > 7) {
+    alert("Please select between 1 and 7 activities.");
     return;
   }
 
   saveToSession('activities', checked);
 
   const submenuInputs = Array.from(document.querySelectorAll('.submenu-container input, .submenu-container textarea, .submenu-container select'));
-  const submenuAnswers = submenuInputs.reduce((acc, input) => {
-    if (input.name && input.value.trim() !== '') {
-      acc[input.name] = input.value.trim();
+  const submenuAnswers = {};
+  submenuInputs.forEach(input => {
+    if (!input.name) return;
+    if (input.type === 'radio') {
+      if (input.checked) {
+        submenuAnswers[input.name] = input.value.trim();
+      }
+    } else if (input.value.trim() !== '') {
+      submenuAnswers[input.name] = input.value.trim();
     }
-    return acc;
-  }, {});
+  });
+
 
   // Collect multi-selects
   ['submenu-7.2', 'submenu-8.2', 'submenu-9.2', 'submenu-10.2', 'submenu-11.2', 'submenu-12.2'].forEach(name => {
@@ -168,13 +174,32 @@ window.onload = () => {
                 <option value="ความเครียดจากน้ำ">ความเครียดจากน้ำ</option>
               </select>
             `;
+          } else if (activityId === '6' && cleanSubNum === '2') {
+            inputField = `
+              <input type="text" name="submenu-${activityId}.${cleanSubNum}" placeholder="โปรดระบุรายละเอียดเพิ่มเติมเกี่ยวกับปัญหาที่พบ" required />
+            `;
           } else if (activityId === '6' && cleanSubNum === '3') {
+            inputField = `
+              <div style="margin-bottom: 6px;">
+                <label style="display: block; margin-bottom: 4px;">ระดับความรุนแรงของปัญหา:</label>
+                <div class="radio-group">
+                  <label><input type="radio" name="submenu-6.3" value="ต่ำ" required> ต่ำ</label>
+                  <label><input type="radio" name="submenu-6.3" value="ปานกลาง"> ปานกลาง</label>
+                  <label><input type="radio" name="submenu-6.3" value="สูง"> สูง</label>
+                </div>
+              </div>
+            `;
+          } else if (activityId === '6' && cleanSubNum === '4') {
             inputField = `
               <select name="submenu-${activityId}.${cleanSubNum}" required>
                 <option value="">-- โปรดเลือก --</option>
                 <option value="ใช่">ใช่</option>
                 <option value="ไม่ใช่">ไม่ใช่</option>
               </select>
+            `;
+          } else if (activityId === '6' && cleanSubNum === '5') {
+            inputField = `
+              <input type="text" name="submenu-6.5" placeholder="ดำเนินการแก้ไขอย่างไร?" required />
             `;
           } else if (activityId === '7' && cleanSubNum === '1') {
             inputField = `

@@ -287,6 +287,11 @@ input[type="checkbox"][name="activity"] {
   max-width: 100%;
 }
 
+.radio-group label {
+  display: block;
+  margin-bottom: 2px; 
+  line-height: 0.8;
+}
 
 
 
