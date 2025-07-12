@@ -354,7 +354,8 @@ def submit_log():
     # Prepare placeholders for submenu answers with empty defaults
     a9_submenus = ['', '', '', '']   # submenu-9.2, 9.1, 9.3, 9.4
     a10_submenus = ['', '', '', '']  # submenu-10.2, 10.1, 10.3, 10.4
-
+    a11_submenus = ['', '', '', '', '']  # submenu-11.2, 11.1, 11.3, 11.4, 11.5
+    
     # Placeholder for your future 2 submenu questions (just 2 empty columns here)
     future_submenus = ['', '']
 
@@ -374,17 +375,24 @@ def submit_log():
                 submenus.get('submenu-10.3', ''),
                 submenus.get('submenu-10.4', '')
             ]
+        elif activity.get('id') == '11':
+            a11_submenus = [
+                submenus.get('submenu-11.2', ''),
+                submenus.get('submenu-11.1', ''),
+                submenus.get('submenu-11.3', ''),
+                submenus.get('submenu-11.4', ''),
+                submenus.get('submenu-11.5', '')
+            ]
 
     # Build one combined row for the sheet
     row = [
         log_id,     # A
         date,       # B
         worker      # C
-    ] + a9_submenus + a10_submenus + future_submenus
+    ] + a9_submenus + a10_submenus + a11_submenus + future_submenus
 
     fruitflowercare_rows.append(row)
 
-    # Append combined row to Fruit/FlowerCare sheet (quoted due to slash)
     sheet_service.values().append(
         spreadsheetId=DAILY_LOGGER_ID,
         range="'Fruit/FlowerCare'!A1",
@@ -401,8 +409,6 @@ def submit_log():
     "savedGardenCare": len(gardencare_rows),
     "savedFruitFlowerCare": len(fruitflowercare_rows)
 })
-
-
 
 @app.route('/admin/view-log')
 def admin_view_log():
@@ -464,7 +470,7 @@ def admin_view_log():
             }
         },
         'Fruit/FlowerCare': {
-            'range': 'Fruit/FlowerCare!A1:K',  # Adjust column range if you have more columns
+            'range': 'Fruit/FlowerCare!A1:P',  # Adjust column range if you have more columns
             'column_map': {
                 'LogID': 0,
                 'Date': 1,
@@ -476,7 +482,12 @@ def admin_view_log():
                 'Other Workers (Product Conservation)': 7,
                 'Product Conservation Method': 8,
                 'Duration (Product Conservation)': 9,
-                'Notes (Product Conservation)': 10
+                'Notes (Product Conservation)': 10,
+                'Other Workers (Harvest)': 11,
+                'Harvest Method': 12,
+                'Duration (Harvest)': 13,
+                'Total Weight Harvest (kgs)': 14,
+                'Notes (Harvest)': 15
                 # Add more columns here as you add submenu questions
             }
         }

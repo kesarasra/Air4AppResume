@@ -20,7 +20,7 @@ document.getElementById('activity-form').addEventListener('submit', e => {
   }, {});
 
   // Collect multi-selects
-  ['submenu-7.2', 'submenu-8.2', 'submenu-9.2', 'submenu-10.2'].forEach(name => {
+  ['submenu-7.2', 'submenu-8.2', 'submenu-9.2', 'submenu-10.2', 'submenu-11.2'].forEach(name => {
     const workerInputs = document.querySelectorAll(`select[name="${name}"]`);
     const workerValues = Array.from(workerInputs).map(input => input.value.trim()).filter(Boolean);
     if (workerValues.length > 0) submenuAnswers[name] = workerValues.join(', ');
@@ -133,7 +133,8 @@ window.onload = () => {
               (activityId === '7' && cleanSubNum === '4') ||
               (activityId === '8' && cleanSubNum === '3') ||
               (activityId === '9' && cleanSubNum === '3') ||
-              (activityId === '10' && cleanSubNum === '3')
+              (activityId === '10' && cleanSubNum === '3') ||
+              (activityId === '11' && cleanSubNum === '3')
             ) {
               inputField = `
                 <div style="margin-bottom: 6px;">
@@ -243,7 +244,7 @@ window.onload = () => {
             `;
           } else if (activityId === '8' && cleanSubNum === '4') {
             inputField = `
-              <input type="text" name="submenu-10.4" />
+              <input type="text" name="submenu-8.4" />
             `;
           } else if (activityId === '9') {
             // submenu-9.1: dropdown for pollination methods
@@ -319,9 +320,49 @@ window.onload = () => {
             } else {
               inputField = `<input type="text" name="submenu-10.${cleanSubNum}" />`;
             }
-          } else {
-            inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" />`;
+          } else if (activityId === '11') {
+          if (cleanSubNum === '1') {
+            const methods = ['ตัดด้วยไม้เคียว', 'เก็บผลที่ร่วงเอง', 'เก็บด้วยมือ', 'รองด้วยถุงหรือผ้า'];
+            inputField = `
+              <select name="submenu-11.1" required>
+                <option value="">-- เลือกวิธีเก็บเกี่ยว --</option>
+                ${methods.map(m => `<option value="${m}">${m}</option>`).join('')}
+              </select>
+            `;
+          } else if (cleanSubNum === '2') {
+            inputField = `
+              <div id="submenu-11-2-container">
+                <div class="worker-select-row">
+                  <select name="submenu-11.2" class="submenu-11-2-select" required>
+                    <option value="">-- เลือกชื่อคนงาน --</option>
+                  </select>
+                  <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
+                </div>
+                <button type="button" class="add-worker-btn" data-activity-id="11">+ เพิ่มชื่อคนงาน</button>
+              </div>
+            `;
+          } else if (cleanSubNum === '3') {
+            inputField = `
+              <div style="margin-bottom:6px;">
+                <label>เวลาเริ่ม: <input type="time" id="start-11" /></label>
+              </div>
+              <div style="margin-bottom:6px;">
+                <label>เวลาสิ้นสุด: <input type="time" id="end-11" /></label>
+              </div>
+              <div style="margin-bottom:6px;">
+                <label>ระยะเวลา (นาที): 
+                  <input type="text" name="submenu-11.3" readonly placeholder="คำนวณอัตโนมัติ" />
+                </label>
+              </div>
+            `;
+          } else if (cleanSubNum === '4') {
+            inputField = `<input type="number" name="submenu-11.4" placeholder="น้ำหนักรวม (กก.)" min="0" step="0.01" />`;
+          } else if (cleanSubNum === '5') {
+            inputField = `<input type="text" name="submenu-11.5" placeholder="หมายเหตุ" />`;
           }
+        } else {
+          inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" />`;
+        }
             
           return `
             <div class="submenu-item">
@@ -369,7 +410,7 @@ window.onload = () => {
           }
         }
 
-        ['7', '8', '9', '10'].forEach(id => {
+        ['7', '8', '9', '10', '11'].forEach(id => {
           const container2 = submenuContainer.querySelector(`#submenu-${id}-2-container`);
           if (!container2) return;
 
@@ -408,7 +449,7 @@ window.onload = () => {
           });
         });
 
-        ['1', '7', '8', '9', '10'].forEach(id => {
+        ['1', '7', '8', '9', '10', '11'].forEach(id => {
           const startInput = submenuContainer.querySelector(`#start-${id}`);
           const endInput = submenuContainer.querySelector(`#end-${id}`);
           let durationInput;
