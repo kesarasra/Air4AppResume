@@ -5,11 +5,26 @@ let phaseZoneMap = {};
 document.getElementById('location-form').addEventListener('submit', async e => {
   e.preventDefault();
 
-  // Collect all tree IDs entered
+  // Collect Tree IDs
   const treeInputs = Array.from(document.querySelectorAll('.tree-id-input'));
   const treeIDs = treeInputs.map(input => input.value.trim().toUpperCase()).filter(Boolean);
 
-  // Validate all Tree IDs if any entered
+  // Collect Phase/Zone/Line sets (will validate later)
+  const pzSets = Array.from(document.querySelectorAll('.pz-set'));
+  const hasAnyPZL = pzSets.some(set => {
+    const phase = set.querySelector('.phase-select').value.trim();
+    const zone = set.querySelector('.zone-select').value.trim();
+    const line = set.querySelector('.line-select').value.trim();
+    return phase || zone || line;
+  });
+
+  // 🔒 Check for both types entered
+  if (treeIDs.length > 0 && hasAnyPZL) {
+    alert('โปรดเลือกวิธีการระบุตำแหน่งเพียงแบบเดียว: รหัสต้นไม้ หรือ ข้อมูลเฟส/โซน/ไลน์');
+    return;
+  }
+
+  // If using Tree ID
   if (treeIDs.length > 0) {
     const invalid = treeIDs.filter(id => !validTreeIDs.includes(id));
     if (invalid.length > 0) {
@@ -17,15 +32,13 @@ document.getElementById('location-form').addEventListener('submit', async e => {
       return;
     }
 
-    // Save treeIDs and clear phase/zone/line sets
     saveToSession('treeIDs', treeIDs);
-    saveToSession('phaseZoneLineSets', []); // clear multi PZL sets
+    saveToSession('phaseZoneLineSets', []); // Clear PZL
     window.location.href = 'activity.html';
     return;
   }
 
   // No tree ID — collect all Phase/Zone/Line sets
-  const pzSets = Array.from(document.querySelectorAll('.pz-set'));
   const collectedSets = [];
 
   for (const set of pzSets) {

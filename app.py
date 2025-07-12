@@ -297,7 +297,7 @@ def submit_log():
 
     treecare_rows = []
 
-    if any(str(act.get('id')) in ['6', '8'] for act in activities):
+    if any(str(act.get('id')) in ['1', '6', '8'] for act in activities):
         treecare_row = [
             log_id,
             date,
