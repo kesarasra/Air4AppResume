@@ -19,8 +19,8 @@ document.getElementById('activity-form').addEventListener('submit', e => {
     return acc;
   }, {});
 
-  // Collect multi-selects for 8.2 and 7.2
-  ['submenu-8.2', 'submenu-7.2'].forEach(name => {
+  // Collect multi-selects
+  ['submenu-7.2', 'submenu-8.2', 'submenu-9.2'].forEach(name => {
     const workerInputs = document.querySelectorAll(`select[name="${name}"]`);
     const workerValues = Array.from(workerInputs).map(input => input.value.trim()).filter(Boolean);
     if (workerValues.length > 0) submenuAnswers[name] = workerValues.join(', ');
@@ -49,6 +49,21 @@ window.onload = () => {
 
   const container = document.getElementById('activity-list');
   container.innerHTML = 'Loading activities...';
+
+  let cachedWorkerNames = [];
+
+  // Function to populate a single worker select with cached names
+  function populateWorkerSelect(select) {
+    // Remove old options except the placeholder (value="")
+    select.querySelectorAll('option:not([value=""])').forEach(opt => opt.remove());
+
+    cachedWorkerNames.forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      select.appendChild(option);
+    });
+  }
 
   fetch('/api/activities')
     .then(response => response.json())
@@ -81,6 +96,16 @@ window.onload = () => {
       container.innerHTML = '<p>Failed to load activities. Please try again later.</p>';
     });
 
+  fetch('/api/worker-names')
+    .then(res => res.json())
+    .then(names => {
+      cachedWorkerNames = names;
+    })
+    .catch(err => {
+      console.error('Error fetching worker names:', err);
+      cachedWorkerNames = [];
+    }); 
+
   container.addEventListener('change', async (e) => {
     const checkbox = e.target.closest('input[name="activity"]');
     if (!checkbox) return;
@@ -103,7 +128,12 @@ window.onload = () => {
               inputField = `<input type="time" name="submenu-${activityId}.${cleanSubNum}" required />`;
             }
           } else if (/ระยะเวลา/.test(sub.question)) {
-            if ((activityId === '8' && cleanSubNum === '3') || (activityId === '1' && cleanSubNum === '1')) {
+            if (
+              (activityId === '1' && cleanSubNum === '1') ||
+              (activityId === '7' && cleanSubNum === '4') ||
+              (activityId === '8' && cleanSubNum === '3') ||
+              (activityId === '9' && cleanSubNum === '3')
+            ) {
               inputField = `
                 <div style="margin-bottom: 6px;">
                   <label>เวลาเริ่ม: <input type="time" id="start-${activityId}" /></label>
@@ -214,9 +244,45 @@ window.onload = () => {
             inputField = `
               <textarea name="submenu-8.4" rows="1" style="overflow:hidden;resize:none;width:100%;" oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';"></textarea>
             `;
+          } else if (activityId === '9') {
+            // submenu-9.1: dropdown for pollination methods
+            if (cleanSubNum === '1') {
+              const methods = ['ผสมเกสรด้วยมือ', 'ฉีดพ่นแบบแห้ง', 'ฉีดพ่นแบบเปียก'];
+              inputField = `<select name="submenu-9.1" required>
+                <option value="">-- เลือกวิธีผสมเกสร --</option>
+                ${methods.map(m => `<option value="${m}">${m}</option>`).join('')}
+              </select>`;
+            } else if (cleanSubNum === '2') {
+              inputField = `
+                <div id="submenu-9-2-container">
+                  <div class="worker-select-row">
+                    <select name="submenu-9.2" class="submenu-9-2-select" required>
+                      <option value="">-- เลือกชื่อคนงาน --</option>
+                    </select>
+                    <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
+                  </div>
+                  <button type="button" class="add-worker-btn" data-activity-id="9">+ เพิ่มชื่อคนงาน</button>
+                </div>`;
+            } else if (cleanSubNum === '3') {
+              inputField = `
+                <div style="margin-bottom:6px;">
+                  <label>เวลาเริ่ม: <input type="time" id="start-9" /></label>
+                </div>
+                <div style="margin-bottom:6px;">
+                  <label>เวลาสิ้นสุด: <input type="time" id="end-9" /></label>
+                </div>
+                <div style="margin-bottom:6px;">
+                  <label>ระยะเวลา (นาที): 
+                    <input type="text" name="submenu-9.3" readonly placeholder="คำนวณอัตโนมัติ" />
+                  </label>
+                </div>`;
+            } else if (cleanSubNum === '4') {
+              inputField = `
+                <textarea name="submenu-9.4" rows="1" style="overflow:hidden;resize:none;width:100%;" oninput="this.style.height='auto';this.style.height=(this.scrollHeight)+'px';"></textarea>`;
+            }
           } else {
             inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" />`;
-          }
+          } 
 
           return `
             <div class="submenu-item">
@@ -264,28 +330,19 @@ window.onload = () => {
           }
         }
 
-        ['7', '8'].forEach(id => {
-          const selectorClass = `.submenu-${id}-2-select`;
-          const selects = submenuContainer.querySelectorAll(selectorClass);
+        ['7', '8', '9'].forEach(id => {
+          const container2 = submenuContainer.querySelector(`#submenu-${id}-2-container`);
+          if (!container2) return;
 
-          fetch('/api/worker-names')
-            .then(res => res.json())
-            .then(names => {
-              selects.forEach(select => {
-                names.forEach(name => {
-                  const option = document.createElement('option');
-                  option.value = name;
-                  option.textContent = name;
-                  select.appendChild(option);
-                });
-              });
-            });
+          // Populate all existing selects with cached worker names
+          const selects = container2.querySelectorAll(`select.submenu-${id}-2-select`);
+          selects.forEach(select => {
+            populateWorkerSelect(select);
+          });
 
-          const container = submenuContainer.querySelector(`#submenu-${id}-2-container`);
-          const addBtn = submenuContainer.querySelector(`.add-worker-btn[data-activity-id="${id}"]`);
-
-          if (addBtn && container) {
-            addBtn.addEventListener('click', () => {
+          // Use event delegation to add/remove worker rows
+          container2.addEventListener('click', e => {
+            if (e.target.classList.contains('add-worker-btn')) {
               const row = document.createElement('div');
               row.className = 'worker-select-row';
               row.innerHTML = `
@@ -294,29 +351,25 @@ window.onload = () => {
                 </select>
                 <button type="button" class="remove-btn" title="ลบ">X</button>
               `;
-              container.insertBefore(row, addBtn);
-              fetch('/api/worker-names')
-                .then(res => res.json())
-                .then(names => {
-                  names.forEach(name => {
-                    const option = document.createElement('option');
-                    option.value = name;
-                    option.textContent = name;
-                    row.querySelector('select').appendChild(option);
-                  });
-                });
-            });
+              container2.insertBefore(row, e.target);
 
-            container.addEventListener('click', e => {
-              if (e.target.classList.contains('remove-btn')) {
-                const row = e.target.closest('.worker-select-row');
-                if (row) row.remove();
-              }
-            });
-          }
+              // Populate new select from cached workerNames
+              const select = row.querySelector('select');
+              cachedWorkerNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                select.appendChild(option);
+              });
+
+            } else if (e.target.classList.contains('remove-btn')) {
+              const row = e.target.closest('.worker-select-row');
+              if (row) row.remove();
+            }
+          });
         });
 
-        ['1', '7', '8'].forEach(id => {
+        ['1', '7', '8', '9'].forEach(id => {
           const startInput = submenuContainer.querySelector(`#start-${id}`);
           const endInput = submenuContainer.querySelector(`#end-${id}`);
           let durationInput;

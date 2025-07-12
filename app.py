@@ -349,13 +349,36 @@ def submit_log():
                 body={"values": gardencare_rows}
             ).execute()
 
+    fruitcare_rows = []
+    for activity in activities:
+        if activity.get('id') == '9':
+            fc_row = [
+                log_id,                                    # A: Log ID
+                date,                                      # B: Date
+                worker,                                    # C: Worker Name
+                submenus.get('submenu-9.2', ''),           # D: Other Workers
+                submenus.get('submenu-9.1', ''),           # E: Pollination Method
+                submenus.get('submenu-9.3', ''),           # F: Duration (mins)
+                submenus.get('submenu-9.4', '')            # G: Notes
+            ]
+            fruitcare_rows.append(fc_row)
+
+    if fruitcare_rows:
+        sheet_service.values().append(
+            spreadsheetId=DAILY_LOGGER_ID,
+            range="Fruit/FlowerCare!A1",
+            valueInputOption="RAW",
+            body={"values": fruitcare_rows}
+        ).execute()
+
 
     return jsonify({
     "status": "success",
     "log_id": log_id,
     "savedDailyLog": 1,
     "savedTreeCare": len(treecare_rows),
-    "savedGardenCare": len(gardencare_rows)
+    "savedGardenCare": len(gardencare_rows),
+    "savedFruitCare": len(fruitcare_rows)
 })
 
 
