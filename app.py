@@ -349,27 +349,48 @@ def submit_log():
                 body={"values": gardencare_rows}
             ).execute()
 
-    fruitcare_rows = []
+    fruitflowercare_rows = []
+
+    # Prepare placeholders for submenu answers with empty defaults
+    a9_submenus = ['', '', '', '']   # submenu-9.2, 9.1, 9.3, 9.4
+    a10_submenus = ['', '', '', '']  # submenu-10.2, 10.1, 10.3, 10.4
+
+    # Placeholder for your future 2 submenu questions (just 2 empty columns here)
+    future_submenus = ['', '']
+
+    # Collect submenu data from activities
     for activity in activities:
         if activity.get('id') == '9':
-            fc_row = [
-                log_id,                                    # A: Log ID
-                date,                                      # B: Date
-                worker,                                    # C: Worker Name
-                submenus.get('submenu-9.2', ''),           # D: Other Workers
-                submenus.get('submenu-9.1', ''),           # E: Pollination Method
-                submenus.get('submenu-9.3', ''),           # F: Duration (mins)
-                submenus.get('submenu-9.4', '')            # G: Notes
+            a9_submenus = [
+                submenus.get('submenu-9.2', ''),
+                submenus.get('submenu-9.1', ''),
+                submenus.get('submenu-9.3', ''),
+                submenus.get('submenu-9.4', '')
             ]
-            fruitcare_rows.append(fc_row)
+        elif activity.get('id') == '10':
+            a10_submenus = [
+                submenus.get('submenu-10.2', ''),
+                submenus.get('submenu-10.1', ''),
+                submenus.get('submenu-10.3', ''),
+                submenus.get('submenu-10.4', '')
+            ]
 
-    if fruitcare_rows:
-        sheet_service.values().append(
-            spreadsheetId=DAILY_LOGGER_ID,
-            range="Fruit/FlowerCare!A1",
-            valueInputOption="RAW",
-            body={"values": fruitcare_rows}
-        ).execute()
+    # Build one combined row for the sheet
+    row = [
+        log_id,     # A
+        date,       # B
+        worker      # C
+    ] + a9_submenus + a10_submenus + future_submenus
+
+    fruitflowercare_rows.append(row)
+
+    # Append combined row to Fruit/FlowerCare sheet (quoted due to slash)
+    sheet_service.values().append(
+        spreadsheetId=DAILY_LOGGER_ID,
+        range="'Fruit/FlowerCare'!A1",
+        valueInputOption="RAW",
+        body={"values": fruitflowercare_rows}
+    ).execute()
 
 
     return jsonify({
@@ -378,7 +399,7 @@ def submit_log():
     "savedDailyLog": 1,
     "savedTreeCare": len(treecare_rows),
     "savedGardenCare": len(gardencare_rows),
-    "savedFruitCare": len(fruitcare_rows)
+    "savedFruitFlowerCare": len(fruitflowercare_rows)
 })
 
 
@@ -440,6 +461,23 @@ def admin_view_log():
                 'Chemical Name': 7,
                 'Amount Used': 8,
                 'Tank Size': 9
+            }
+        },
+        'Fruit/FlowerCare': {
+            'range': 'Fruit/FlowerCare!A1:K',  # Adjust column range if you have more columns
+            'column_map': {
+                'LogID': 0,
+                'Date': 1,
+                'Worker Name': 2,
+                'Other Workers (Pollination)': 3,
+                'Pollination Method': 4,
+                'Duration (Pollination)': 5,
+                'Notes (Pollination)': 6,
+                'Other Workers (Product Conservation)': 7,
+                'Product Conservation Method': 8,
+                'Duration (Product Conservation)': 9,
+                'Notes (Product Conservation)': 10
+                # Add more columns here as you add submenu questions
             }
         }
     }

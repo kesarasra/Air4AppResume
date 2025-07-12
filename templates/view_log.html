@@ -61,6 +61,7 @@
             <a href="{{ url_for('admin_view_log', sheet='DailyLog') }}" class="button {% if sheet_name == 'DailyLog' %}active{% endif %}">View DailyLog</a>
             <a href="{{ url_for('admin_view_log', sheet='TreeCare') }}" class="button {% if sheet_name == 'TreeCare' %}active{% endif %}">View TreeCare</a>
             <a href="{{ url_for('admin_view_log', sheet='GardenCare') }}" class="button {% if sheet_name == 'GardenCare' %}active{% endif %}">View GardenCare</a>
+            <a href="{{ url_for('admin_view_log', sheet='Fruit/FlowerCare') }}" class="button {% if sheet_name == 'Fruit/FlowerCare' %}active{% endif %}">View Fruit/FlowerCare</a>
         </div>
 
         <h2>Currently Viewing: {{ sheet_name | default("DailyLog") }}</h2>
@@ -113,7 +114,7 @@
             const cellA = a.cells[columnIndex].textContent.trim();
             const cellB = b.cells[columnIndex].textContent.trim();
 
-            if (columnIndex === 0) {
+            if (columnIndex === 1) {
                 const dateA = parseDateDDMMYYYY(cellA);
                 const dateB = parseDateDDMMYYYY(cellB);
                 if (dateA && dateB) return isAscending ? dateA - dateB : dateB - dateA;
