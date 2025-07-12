@@ -20,7 +20,7 @@ document.getElementById('activity-form').addEventListener('submit', e => {
   }, {});
 
   // Collect multi-selects
-  ['submenu-7.2', 'submenu-8.2', 'submenu-9.2', 'submenu-10.2', 'submenu-11.2'].forEach(name => {
+  ['submenu-7.2', 'submenu-8.2', 'submenu-9.2', 'submenu-10.2', 'submenu-11.2', 'submenu-12.2'].forEach(name => {
     const workerInputs = document.querySelectorAll(`select[name="${name}"]`);
     const workerValues = Array.from(workerInputs).map(input => input.value.trim()).filter(Boolean);
     if (workerValues.length > 0) submenuAnswers[name] = workerValues.join(', ');
@@ -134,7 +134,8 @@ window.onload = () => {
               (activityId === '8' && cleanSubNum === '3') ||
               (activityId === '9' && cleanSubNum === '3') ||
               (activityId === '10' && cleanSubNum === '3') ||
-              (activityId === '11' && cleanSubNum === '3')
+              (activityId === '11' && cleanSubNum === '3') ||
+              (activityId === '12' && cleanSubNum === '3')
             ) {
               inputField = `
                 <div style="margin-bottom: 6px;">
@@ -360,10 +361,50 @@ window.onload = () => {
           } else if (cleanSubNum === '5') {
             inputField = `<input type="text" name="submenu-11.5" placeholder="หมายเหตุ" />`;
           }
+        } else if (activityId === '12' && cleanSubNum === '1') {
+          inputField = `
+            <select name="submenu-12.1" id="submenu-12.1" required>
+              <option value="">-- เลือกวิธีฟื้นฟูต้นไม้ --</option>
+              <option value="การตัดแต่งกิ่ง">PH01 - การตัดแต่งกิ่ง</option>
+              <option value="การคลุมดิน">PH02 - การคลุมดิน</option>
+              <option value="การเก็บกวาดเศษซาก">PH03 - การเก็บกวาดเศษซาก</option>
+              <option value="การใส่ปุ๋ยหลังเก็บเกี่ยว">PH04 - การใส่ปุ๋ยหลังเก็บเกี่ยว</option>
+              <option value="การป้องกันและกำจัดศัตรูพืช">PH05 - การป้องกันและกำจัดศัตรูพืช</option>
+              <option value="การกำจัดวัชพืช">PH06 - การกำจัดวัชพืช</option>
+            </select>
+          `;
+        } else if (activityId === '12' && cleanSubNum === '2') {
+          inputField = `
+            <div id="submenu-12-2-container">
+              <div class="worker-select-row">
+                <select name="submenu-12.2" class="submenu-12-2-select" required>
+                  <option value="">-- เลือกชื่อคนงาน --</option>
+                </select>
+                <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
+              </div>
+              <button type="button" class="add-worker-btn" data-activity-id="12">+ เพิ่มชื่อคนงาน</button>
+            </div>
+          `;
+        } else if (activityId === '12' && cleanSubNum === '3') {
+          inputField = `
+            <div style="margin-bottom: 6px;">
+              <label>เวลาเริ่ม: <input type="time" id="start-12" /></label>
+            </div>
+            <div style="margin-bottom: 6px;">
+              <label>เวลาสิ้นสุด: <input type="time" id="end-12" /></label>
+            </div>
+            <div style="margin-bottom: 6px;">
+              <label>ระยะเวลา (นาที): 
+                <input type="text" name="submenu-12.3" readonly placeholder="คำนวณอัตโนมัติ" />
+              </label>
+            </div>
+          `;
+        } else if (activityId === '12' && cleanSubNum === '4') {
+          inputField = `<input type="text" name="submenu-12.4" />`;
         } else {
           inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" />`;
         }
-            
+
           return `
             <div class="submenu-item">
               <label>
@@ -410,7 +451,45 @@ window.onload = () => {
           }
         }
 
-        ['7', '8', '9', '10', '11'].forEach(id => {
+        if (activityId === '12') {
+          submenuContainer.innerHTML += `
+            <div id="ph-extra-fields" style="display:none; margin-top:10px; padding-left:10px; border-left:2px solid #ccc;">
+              <div class="submenu-item">
+                <label>12.5 ชื่อสารเคมี:
+                  <input type="text" name="submenu-12.5" />
+                </label>
+              </div>
+              <div class="submenu-item">
+                <label>12.6 ปริมาณที่ใช้:
+                  <input type="text" name="submenu-12.6" />
+                </label>
+              </div>
+              <div class="submenu-item">
+                <label>12.7 ขนาดถัง:
+                  <input type="text" name="submenu-12.7" />
+                </label>
+              </div>
+            </div>
+          `;
+
+          const phSelect = submenuContainer.querySelector('[id="submenu-12.1"]');
+          const extraFields = submenuContainer.querySelector('#ph-extra-fields');
+
+          console.log('phSelect:', phSelect);
+          console.log('extraFields:', extraFields);
+
+          if (phSelect && extraFields) {
+            const togglePHFields = () => {
+              const selectedText = phSelect.options[phSelect.selectedIndex].text.toUpperCase();
+              const show = ['PH04', 'PH05', 'PH06'].some(code => selectedText.startsWith(code));
+              extraFields.style.display = show ? 'block' : 'none';
+            };
+            phSelect.addEventListener('change', togglePHFields);
+            togglePHFields(); // initial state
+          }
+        }
+
+        ['7', '8', '9', '10', '11', '12'].forEach(id => {
           const container2 = submenuContainer.querySelector(`#submenu-${id}-2-container`);
           if (!container2) return;
 
@@ -449,7 +528,7 @@ window.onload = () => {
           });
         });
 
-        ['1', '7', '8', '9', '10', '11'].forEach(id => {
+        ['1', '7', '8', '9', '10', '11', '12'].forEach(id => {
           const startInput = submenuContainer.querySelector(`#start-${id}`);
           const endInput = submenuContainer.querySelector(`#end-${id}`);
           let durationInput;

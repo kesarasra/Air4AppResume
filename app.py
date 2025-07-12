@@ -355,9 +355,7 @@ def submit_log():
     a9_submenus = ['', '', '', '']   # submenu-9.2, 9.1, 9.3, 9.4
     a10_submenus = ['', '', '', '']  # submenu-10.2, 10.1, 10.3, 10.4
     a11_submenus = ['', '', '', '', '']  # submenu-11.2, 11.1, 11.3, 11.4, 11.5
-    
-    # Placeholder for your future 2 submenu questions (just 2 empty columns here)
-    future_submenus = ['', '']
+    a12_submenus = ['', '', '', '', '', '', '']
 
     # Collect submenu data from activities
     for activity in activities:
@@ -383,13 +381,23 @@ def submit_log():
                 submenus.get('submenu-11.4', ''),
                 submenus.get('submenu-11.5', '')
             ]
+        elif activity.get('id') == '12':
+            a12_submenus = [
+                submenus.get('submenu-12.2', ''),
+                submenus.get('submenu-12.1', ''),
+                submenus.get('submenu-12.3', ''),
+                submenus.get('submenu-12.4', ''),
+                submenus.get('submenu-12.5', ''),
+                submenus.get('submenu-12.6', ''),
+                submenus.get('submenu-12.7', '')
+            ]
 
     # Build one combined row for the sheet
     row = [
         log_id,     # A
         date,       # B
         worker      # C
-    ] + a9_submenus + a10_submenus + a11_submenus + future_submenus
+    ] + a9_submenus + a10_submenus + a11_submenus + a12_submenus
 
     fruitflowercare_rows.append(row)
 
@@ -470,7 +478,7 @@ def admin_view_log():
             }
         },
         'Fruit/FlowerCare': {
-            'range': 'Fruit/FlowerCare!A1:P',  # Adjust column range if you have more columns
+            'range': 'Fruit/FlowerCare!A1:W',  # Adjust column range if you have more columns
             'column_map': {
                 'LogID': 0,
                 'Date': 1,
@@ -487,8 +495,14 @@ def admin_view_log():
                 'Harvest Method': 12,
                 'Duration (Harvest)': 13,
                 'Total Weight Harvest (kgs)': 14,
-                'Notes (Harvest)': 15
-                # Add more columns here as you add submenu questions
+                'Notes (Harvest)': 15,
+                'Other Workers (Post-Harvest)': 16,
+                'Post-Harvest Method': 17,
+                'Duration (Post-Harvest)': 18,
+                'Notes (Post-Harvest)': 19,
+                'Chemical Name': 20,
+                'Amount Used': 21,
+                'Tank Size': 22
             }
         }
     }

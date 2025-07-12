@@ -14,7 +14,10 @@ window.onload = async () => {
   const extraSubmenuLabels = {
     'submenu-7.6': '7.6 ชื่อสารเคมี',
     'submenu-7.7': '7.7 ปริมาณที่ใช้',
-    'submenu-7.8': '7.8 ขนาดถัง'
+    'submenu-7.8': '7.8 ขนาดถัง',
+    'submenu-12.5': '12.5 ชื่อสารเคมี',
+    'submenu-12.6': '12.6 ปริมาณที่ใช้',
+    'submenu-12.7': '12.7 ขนาดถัง'
   };
 
   // Display location summary
