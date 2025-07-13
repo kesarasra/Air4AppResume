@@ -71,7 +71,8 @@
                 <thead>
                     <tr>
                         {% for col in headers %}
-                            <th onclick="sortTable({{ loop.index0 }})">
+                            <th onclick="sortTable({{ loop.index0 }})"
+                                style="background-color: {{ header_colors[loop.index0] }}; color: white;">
                                 {{ col }}
                             </th>
                         {% endfor %}

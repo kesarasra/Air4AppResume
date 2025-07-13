@@ -565,7 +565,37 @@ def admin_view_log():
         if row and row[0]:
             row[0] = format_date_yyyymmdd_to_ddmmyyyy(row[0])
 
-    return render_template('view_log.html', headers=headers, rows=rows, sort_by=sort_by, sheet_name=sheet_name)
+    try:
+        format_result = sheet.get(
+            spreadsheetId=DAILY_LOGGER_ID,
+            ranges=[sheet_config['range'].split('!')[0] + '!1:1'],  # Get first row only
+            includeGridData=True
+        ).execute()
+
+        bg_colors = []
+        grid_data = format_result['sheets'][0]['data'][0]['rowData'][0]['values']
+        for cell in grid_data:
+            color = cell.get('effectiveFormat', {}).get('backgroundColor', {})
+            r = int(color.get('red', 0) * 255)
+            g = int(color.get('green', 0) * 255)
+            b = int(color.get('blue', 0) * 255)
+            bg_colors.append(f'rgb({r},{g},{b})')
+    except Exception as e:
+        print("Warning: Couldn't fetch header colors:", e)
+        bg_colors = ['#333'] * len(headers)
+
+    # If number of colors less than headers, fill rest
+    if len(bg_colors) < len(headers):
+        bg_colors += ['#333'] * (len(headers) - len(bg_colors))
+
+    return render_template(
+        'view_log.html',
+        headers=headers,
+        rows=rows,
+        sort_by=sort_by,
+        sheet_name=sheet_name,
+        header_colors=bg_colors  
+    )
 
 
 if __name__ == '__main__':
