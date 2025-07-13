@@ -145,13 +145,13 @@ window.onload = () => {
             ) {
               inputField = `
                 <div style="margin-bottom: 6px;">
-                  <label>เวลาเริ่ม: <input type="time" id="start-${activityId}" /></label>
+                  <label>เวลาเริ่ม: <input type="time" id="start-${activityId}" required/></label>
                 </div>
                 <div style="margin-bottom: 6px;">
-                  <label>เวลาสิ้นสุด: <input type="time" id="end-${activityId}" /></label>
+                  <label>เวลาสิ้นสุด: <input type="time" id="end-${activityId}" required/></label>
                 </div>
                 <div style="margin-bottom: 6px;">
-                  <label>ระยะเวลา (นาที): <input type="text" name="submenu-${activityId}.${cleanSubNum}" readonly placeholder="คำนวณอัตโนมัติ" /></label>
+                  <label>ระยะเวลา (นาที): <input type="text" name="submenu-${activityId}.${cleanSubNum}" readonly placeholder="คำนวณอัตโนมัติ" required/></label>
                 </div>
               `;
             } else {
@@ -229,18 +229,18 @@ window.onload = () => {
               </div>
             `;
           } else if (activityId === '7' && cleanSubNum === '3') {
-            inputField = `<input type="text" name="submenu-7.3" />`;
+            inputField = `<input type="text" name="submenu-7.3" required/>`;
           } else if (activityId === '7' && cleanSubNum === '4') {
             inputField = `
               <div style="margin-bottom: 6px;">
-                <label>เวลาเริ่ม: <input type="time" id="start-7" /></label>
+                <label>เวลาเริ่ม: <input type="time" id="start-7" required/></label>
               </div>
               <div style="margin-bottom: 6px;">
-                <label>เวลาสิ้นสุด: <input type="time" id="end-7" /></label>
+                <label>เวลาสิ้นสุด: <input type="time" id="end-7" required/></label>
               </div>
               <div style="margin-bottom: 6px;">
                 <label>ระยะเวลา (นาที): 
-                  <input type="text" name="submenu-7.4" readonly placeholder="คำนวณอัตโนมัติ" />
+                  <input type="text" name="submenu-7.4" readonly placeholder="คำนวณอัตโนมัติ" required/>
                 </label>
               </div>
             `;
@@ -465,12 +465,23 @@ window.onload = () => {
           `;
 
           const gc07Select = submenuContainer.querySelector('[id="submenu-7.1"]');
-          const extraFields = submenuContainer.querySelector('#gc07-extra-fields');
+          const gc07extraFields = submenuContainer.querySelector('#gc07-extra-fields');
 
-          if (gc07Select && extraFields) {
+          if (gc07Select && gc07extraFields) {
+            const gc07Inputs = gc07extraFields.querySelectorAll('input');
+
             const toggleGC07Fields = () => {
-              extraFields.style.display = gc07Select.value === 'พ่นสารเคมี' ? 'block' : 'none';
+              const isGC07 = gc07Select.value === 'พ่นสารเคมี';
+              gc07extraFields.style.display = isGC07 ? 'block' : 'none';
+              gc07Inputs.forEach(input => {
+                if (isGC07) {
+                  input.setAttribute('required', 'required');
+                } else {
+                  input.removeAttribute('required');
+                }
+              });
             };
+
             gc07Select.addEventListener('change', toggleGC07Fields);
             toggleGC07Fields(); // initial state
           }
@@ -498,16 +509,16 @@ window.onload = () => {
           `;
 
           const phSelect = submenuContainer.querySelector('[id="submenu-12.1"]');
-          const extraFields = submenuContainer.querySelector('#ph-extra-fields');
+          const phextraFields = submenuContainer.querySelector('#ph-extra-fields');
 
           console.log('phSelect:', phSelect);
-          console.log('extraFields:', extraFields);
+          console.log('phextraFields:', phextraFields);
 
-          if (phSelect && extraFields) {
+          if (phSelect && phextraFields) {
             const togglePHFields = () => {
               const selectedText = phSelect.options[phSelect.selectedIndex].text.toUpperCase();
               const show = ['PH04', 'PH05', 'PH06'].some(code => selectedText.startsWith(code));
-              extraFields.style.display = show ? 'block' : 'none';
+              phextraFields.style.display = show ? 'block' : 'none';
             };
             phSelect.addEventListener('change', togglePHFields);
             togglePHFields(); // initial state
