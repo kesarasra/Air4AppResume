@@ -220,7 +220,7 @@ window.onload = () => {
             inputField = `
               <div id="submenu-7-2-container">
                 <div class="worker-select-row">
-                  <select name="submenu-7.2" class="submenu-7-2-select" required>
+                  <select name="submenu-7.2" class="submenu-7-2-select">
                     <option value="">-- เลือกชื่อคนงาน --</option>
                   </select>
                   <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
@@ -248,19 +248,19 @@ window.onload = () => {
             inputField = `
               <select name="submenu-8.1" required>
                 <option value="">-- เลือกประเภทงานตัดแต่ง --</option>
-                <option value="TP01">TP01</option>
-                <option value="TP02">TP02</option>
-                <option value="TP03">TP03</option>
-                <option value="TP04">TP04</option>
-                <option value="TP05">TP05</option>
-                <option value="TP06">TP06</option>
+                <option value="ตัดกิ่งแห้ง/เสียหาย">TP01 - ตัดกิ่งแห้ง/เสียหาย</option>
+                <option value="ตัดกิ่งให้โปร่ง">TP02 - ตัดกิ่งให้โปร่ง</option>
+                <option value="ตัดปลายยอด">TP03 - ตัดปลายยอด</option>
+                <option value="ตัดแต่งโครงสร้าง">TP04 - ตัดแต่งโครงสร้าง</option>
+                <option value="ตัดฟื้นฟูต้นแก่">TP05 - ตัดฟื้นฟูต้นแก่</option>
+                <option value="ตัดกิ่งล่าง">TP06 - ตัดกิ่งล่าง</option>
               </select>
             `;
           } else if (activityId === '8' && cleanSubNum === '2') {
             inputField = `
               <div id="submenu-8-2-container">
                 <div class="worker-select-row">
-                  <select name="submenu-8.2" class="submenu-8-2-select" required>
+                  <select name="submenu-8.2" class="submenu-8-2-select">
                     <option value="">-- เลือกชื่อคนงาน --</option>
                   </select>
                   <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
@@ -284,7 +284,7 @@ window.onload = () => {
               inputField = `
                 <div id="submenu-9-2-container">
                   <div class="worker-select-row">
-                    <select name="submenu-9.2" class="submenu-9-2-select" required>
+                    <select name="submenu-9.2" class="submenu-9-2-select">
                       <option value="">-- เลือกชื่อคนงาน --</option>
                     </select>
                     <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
@@ -321,7 +321,7 @@ window.onload = () => {
               inputField = `
                 <div id="submenu-10-2-container">
                   <div class="worker-select-row">
-                    <select name="submenu-10.2" class="submenu-10-2-select" required>
+                    <select name="submenu-10.2" class="submenu-10-2-select">
                       <option value="">-- เลือกชื่อคนงาน --</option>
                     </select>
                     <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
@@ -359,7 +359,7 @@ window.onload = () => {
             inputField = `
               <div id="submenu-11-2-container">
                 <div class="worker-select-row">
-                  <select name="submenu-11.2" class="submenu-11-2-select" required>
+                  <select name="submenu-11.2" class="submenu-11-2-select">
                     <option value="">-- เลือกชื่อคนงาน --</option>
                   </select>
                   <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
@@ -402,7 +402,7 @@ window.onload = () => {
           inputField = `
             <div id="submenu-12-2-container">
               <div class="worker-select-row">
-                <select name="submenu-12.2" class="submenu-12-2-select" required>
+                <select name="submenu-12.2" class="submenu-12-2-select">
                   <option value="">-- เลือกชื่อคนงาน --</option>
                 </select>
                 <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
