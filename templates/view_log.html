@@ -58,13 +58,13 @@
 
     <main>
         <div class="sheet-buttons">
-            <a href="{{ url_for('admin_view_log', sheet='DailyLog') }}" class="button {% if sheet_name == 'DailyLog' %}active{% endif %}">View DailyLog</a>
-            <a href="{{ url_for('admin_view_log', sheet='TreeCare') }}" class="button {% if sheet_name == 'TreeCare' %}active{% endif %}">View TreeCare</a>
-            <a href="{{ url_for('admin_view_log', sheet='GardenCare') }}" class="button {% if sheet_name == 'GardenCare' %}active{% endif %}">View GardenCare</a>
-            <a href="{{ url_for('admin_view_log', sheet='Fruit/FlowerCare') }}" class="button {% if sheet_name == 'Fruit/FlowerCare' %}active{% endif %}">View Fruit/FlowerCare</a>
+            <a href="{{ url_for('admin_view_log', sheet='DailyLog') }}" class="button {% if sheet_name == 'DailyLog' %}active{% endif %}">View Daily Log</a>
+            <a href="{{ url_for('admin_view_log', sheet='TreeCare') }}" class="button {% if sheet_name == 'TreeCare' %}active{% endif %}">View Tree Care</a>
+            <a href="{{ url_for('admin_view_log', sheet='GardenCare') }}" class="button {% if sheet_name == 'GardenCare' %}active{% endif %}">View Garden Care</a>
+            <a href="{{ url_for('admin_view_log', sheet='Fruit/FlowerCare') }}" class="button {% if sheet_name == 'Fruit/FlowerCare' %}active{% endif %}">View Fruit/Flower Care</a>
         </div>
 
-        <h2>Currently Viewing: {{ sheet_name | default("DailyLog") }}</h2>
+        <h2>กำลังดูบันทึก: {{ sheet_name | default("DailyLog") }}</h2>
 
         {% if headers and rows %}
             <table data-sort-dir="">

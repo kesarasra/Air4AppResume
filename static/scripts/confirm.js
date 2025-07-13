@@ -142,8 +142,7 @@ window.onload = async () => {
       if (!response.ok) throw new Error('Failed to submit log');
 
       alert('ส่งข้อมูลสำเร็จ!');
-      sessionStorage.clear();
-      window.location.href = '/';
+      window.location.href = 'success.html';
     } catch (err) {
       console.error('Error submitting log:', err);
       alert('เกิดข้อผิดพลาดในการส่งข้อมูล กรุณาลองใหม่อีกครั้ง');

@@ -27,17 +27,20 @@
 <script src="scripts/utils.js"></script>
 <script>
   function addAnother() {
-    // Keep workerName and logDate
+    // ✅ Step 1: Read session values before clearing
     const worker = getFromSession('workerName');
     const date = getFromSession('logDate');
     const lastWelcomed = getFromSession('lastWelcomedWorker');
 
+    // ✅ Step 2: Clear everything
     sessionStorage.clear();
+
+    // ✅ Step 3: Restore preserved data
     saveToSession('workerName', worker);
     saveToSession('logDate', date);
     saveToSession('lastWelcomedWorker', lastWelcomed);
 
-    // Go back to location step
+    // ✅ Step 4: Go to location page
     window.location.href = 'location.html';
   }
 
