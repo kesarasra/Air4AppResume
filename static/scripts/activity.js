@@ -26,7 +26,7 @@ document.getElementById('activity-form').addEventListener('submit', e => {
 
 
   // Collect multi-selects
-  ['submenu-4.2', 'submenu-5.2', 'submenu-6.2', 'submenu-7.2', 'submenu-8.2', 'submenu-9.2'].forEach(name => {
+  ['submenu-2.2', 'submenu-4.2', 'submenu-5.2', 'submenu-6.2', 'submenu-7.2', 'submenu-8.2', 'submenu-9.2'].forEach(name => {
     const workerInputs = document.querySelectorAll(`select[name="${name}"]`);
     const workerValues = Array.from(workerInputs).map(input => input.value.trim()).filter(Boolean);
     if (workerValues.length > 0) submenuAnswers[name] = workerValues.join(', ');
@@ -136,6 +136,7 @@ window.onload = () => {
           } else if (/ระยะเวลา/.test(sub.question)) {
             if (
               (activityId === '1' && cleanSubNum === '1') ||
+              (activityId === '2' && cleanSubNum === '3') ||
               (activityId === '4' && cleanSubNum === '4') ||
               (activityId === '5' && cleanSubNum === '3') ||
               (activityId === '6' && cleanSubNum === '3') ||
@@ -157,6 +158,55 @@ window.onload = () => {
             } else {
               inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" readonly placeholder="คำนวณอัตโนมัติ" />`;
             }
+          } else if (activityId === '2' && cleanSubNum === '1') {
+            inputField = `
+              <select name="submenu-2.1" required>
+                <option value="">-- เลือกวิธีการให้ปุ๋ย --</option>
+                <option value="รถพ่น">รถพ่น</option>
+                <option value="สายยางพื้นดิน">สายยางพื้นดิน</option>
+                <option value="แทงก์ผสมในระบบน้ำ">แทงก์ผสมในระบบน้ำ</option>
+                <option value="โปรยด้วยมือ">โปรยด้วยมือ</option>
+              </select>
+            `;
+          } else if (activityId === '2' && cleanSubNum === '2') {
+            inputField = `
+              <div id="submenu-2-2-container">
+                <div class="worker-select-row">
+                  <select name="submenu-2.2" class="submenu-2-2-select">
+                    <option value="">-- เลือกชื่อคนงาน --</option>
+                  </select>
+                  <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
+                </div>
+                <button type="button" class="add-worker-btn" data-activity-id="2">+ เพิ่มชื่อคนงาน</button>
+              </div>
+            `;
+          } else if (activityId === '2' && cleanSubNum === '4') {
+            inputField = `<input type="text" name="submenu-2.4" placeholder="รหัสสูตรปุ๋ย" />
+            `;
+          } else if (activityId === '2' && cleanSubNum === '5') {
+            const treeParts = ['ใบ', 'กิ่ง', 'ผล', 'โคนต้น'];
+            inputField = `
+              <select name="submenu-2.5" required>
+                <option value="">-- เลือกบริเวณของต้นไม้ --</option>
+                ${treeParts.map(p => `<option value="${p}">${p}</option>`).join('')}
+              </select>
+            `;
+          } else if (activityId === '2' && cleanSubNum === '6') {
+            inputField = `
+              <div style="display:flex; gap:10px;">
+                <input type="number" name="submenu-2.6.1" placeholder="ปริมาณ" min="0" step="0.01" required />
+                <select name="submenu-2.6.2" required>
+                  <option value="">หน่วย</option>
+                  <option value="kg">kg</option>
+                  <option value="L">L</option>
+                </select>
+              </div>
+            `;
+          } else if (activityId === '2' && cleanSubNum === '7') {
+            inputField = `<input type="text" name="submenu-2.7" placeholder="เครื่องมือหรือยานพาหนะ" />`;
+          } else if (activityId === '2' && cleanSubNum === '8') {
+            inputField = `<input type="text" name="submenu-2.8" placeholder="บันทึกเพิ่มเติม" />
+            `;
           } else if (activityId === '3' && cleanSubNum === '1') {
             inputField = `
               <select name="submenu-${activityId}.${cleanSubNum}" required>
@@ -525,7 +575,7 @@ window.onload = () => {
           }
         }
 
-        ['4', '5', '6', '7', '8', '9'].forEach(id => {
+        ['2', '4', '5', '6', '7', '8', '9'].forEach(id => {
           const container2 = submenuContainer.querySelector(`#submenu-${id}-2-container`);
           if (!container2) return;
 
@@ -564,7 +614,7 @@ window.onload = () => {
           });
         });
 
-        ['1', '4', '5', '6', '7', '8', '9'].forEach(id => {
+        ['1', '2', '4', '5', '6', '7', '8', '9'].forEach(id => {
           const startInput = submenuContainer.querySelector(`#start-${id}`);
           const endInput = submenuContainer.querySelector(`#end-${id}`);
           let durationInput;

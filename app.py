@@ -297,13 +297,22 @@ def submit_log():
 
     treecare_rows = []
 
-    if any(str(act.get('id')) in ['1', '3', '5'] for act in activities):
+    if any(str(act.get('id')) in ['1', '2', '3', '5'] for act in activities):
         treecare_row = [
             log_id,
             date,
             worker,
             submenus.get('submenu-1.1', ''),  # Watering Duration
             submenus.get('submenu-1.2', ''),  # Notes
+            submenus.get('submenu-2.1', ''),  # Fertilizing Method
+            submenus.get('submenu-2.2', ''),  # Other Workers
+            submenus.get('submenu-2.3', ''),  # Duration (mins)
+            submenus.get('submenu-2.4', ''),  # Fertilizer Formula
+            submenus.get('submenu-2.5', ''),  # Part of Tree Applied
+            submenus.get('submenu-2.6.1', ''),  # Fertilizer Amount
+            submenus.get('submenu-2.6.2', ''),  # Unit in kg or L
+            submenus.get('submenu-2.7', ''),  # Equipment
+            submenus.get('submenu-2.8', ''),  # Notes
             submenus.get('submenu-3.1', ''),  # Tree Problem
             submenus.get('submenu-3.2', ''),  # Problem Details
             submenus.get('submenu-3.3', ''),  # 🔸 Severity of Problem (radio buttons)
