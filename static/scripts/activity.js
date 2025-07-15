@@ -181,8 +181,38 @@ window.onload = () => {
               </div>
             `;
           } else if (activityId === '2' && cleanSubNum === '4') {
-            inputField = `<input type="text" name="submenu-2.4" placeholder="รหัสสูตรปุ๋ย" />
-            `;
+              inputField = `<select name="submenu-2.4" id="submenu-2-4" required>
+                              <option value="">-- เลือกรหัสสูตรปุ๋ย --</option>
+                            </select>`;
+
+              // Safe DOM polling
+              const waitForElement = (id, callback, interval = 50, maxAttempts = 20) => {
+                let attempts = 0;
+                const timer = setInterval(() => {
+                  const el = document.getElementById(id);
+                  if (el || attempts >= maxAttempts) {
+                    clearInterval(timer);
+                    if (el) callback(el);
+                  }
+                  attempts++;
+                }, interval);
+              };
+
+              waitForElement('submenu-2-4', (select) => {
+                fetch('/api/formula-ids')
+                  .then(res => res.json())
+                  .then(formulaIds => {
+                    formulaIds.forEach(id => {
+                      const option = document.createElement('option');
+                      option.value = id;
+                      option.textContent = id;
+                      select.appendChild(option);
+                    });
+                  })
+                  .catch(err => {
+                    console.error('Failed to load formula IDs:', err);
+                  });
+              });
           } else if (activityId === '2' && cleanSubNum === '5') {
             const treeParts = ['ใบ', 'กิ่ง', 'ผล', 'โคนต้น'];
             inputField = `

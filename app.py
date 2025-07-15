@@ -25,6 +25,8 @@ sheet = service.spreadsheets()
 # Sheet IDs
 DAILY_LOGGER_ID = '1Nao5N_jvnBcCZTwWwoWPZPpK9vB4w-ajn2MVLG79C3U'
 TREE_DB_ID = '1-L2izXLfLDq-JMQ4Z_h0svSYVqSlB-V77HyaWaFqWKE'
+CHEMICALS_SHEET_ID = '1weqqgU3_APV57Gh0dg7wG4DNqKZfQj6Fb027wp-aAaw'
+
 
 # Sheet Names
 WORKER_SHEET = 'WorkerNames'
@@ -225,6 +227,36 @@ def get_submenus(activity_id):
     
 
     return jsonify(submenus)
+
+@app.route('/api/formula-ids', methods=['GET'])
+def get_formula_ids():
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        service = get_service()
+        sheet = service.spreadsheets()
+
+        result = sheet.values().get(
+            spreadsheetId=CHEMICALS_SHEET_ID,
+            range='Formulations!A2:A'
+        ).execute()
+
+        values = result.get('values', [])
+        print("✅ Raw values from Formulations:", values)  # DEBUG
+
+        formula_ids = list({row[0].strip() for row in values if row and row[0].strip()})
+        formula_ids.sort()
+
+        print("✅ Cleaned formula IDs:", formula_ids)  # DEBUG
+        return jsonify(formula_ids)
+
+    except Exception as e:
+        print("❌ ERROR in /api/formula-ids:", str(e))  # DEBUG LOG
+        return jsonify({
+            'error': 'Failed to fetch formula IDs',
+            'details': str(e)
+        }), 500
 
 
 @app.route('/api/submit', methods=['POST'])
