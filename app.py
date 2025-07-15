@@ -297,22 +297,22 @@ def submit_log():
 
     treecare_rows = []
 
-    if any(str(act.get('id')) in ['1', '6', '8'] for act in activities):
+    if any(str(act.get('id')) in ['1', '3', '5'] for act in activities):
         treecare_row = [
             log_id,
             date,
             worker,
             submenus.get('submenu-1.1', ''),  # Watering Duration
             submenus.get('submenu-1.2', ''),  # Notes
-            submenus.get('submenu-6.1', ''),  # Tree Problem
-            submenus.get('submenu-6.2', ''),  # Problem Details
-            submenus.get('submenu-6.3', ''),  # 🔸 Severity of Problem (radio buttons)
-            submenus.get('submenu-6.4', ''),  # Sample Submitted
-            submenus.get('submenu-6.5', ''),  # Corrective Action
-            submenus.get('submenu-8.1', ''),  # Tree Trimming Code
-            submenus.get('submenu-8.2', ''),  # Other Workers
-            submenus.get('submenu-8.3', ''),  # Trimming Duration
-            submenus.get('submenu-8.4', '')   # Observations
+            submenus.get('submenu-3.1', ''),  # Tree Problem
+            submenus.get('submenu-3.2', ''),  # Problem Details
+            submenus.get('submenu-3.3', ''),  # 🔸 Severity of Problem (radio buttons)
+            submenus.get('submenu-3.4', ''),  # Sample Submitted
+            submenus.get('submenu-3.5', ''),  # Corrective Action
+            submenus.get('submenu-5.1', ''),  # Tree Trimming Code
+            submenus.get('submenu-5.2', ''),  # Other Workers
+            submenus.get('submenu-5.3', ''),  # Trimming Duration
+            submenus.get('submenu-5.4', '')   # Observations
         ]
         treecare_rows.append(treecare_row)
     
@@ -326,19 +326,19 @@ def submit_log():
 
     gardencare_rows = []
     for activity in activities:
-            if activity.get('id') == '7':
+            if activity.get('id') == '4':
                 gc_row = [
                     log_id,
                     date,                                         # A: Date
                     worker,                                       # B: Worker Name
-                    submenus.get('submenu-7.2', ''),              # C: Other Workers (number or names)
-                    submenus.get('submenu-7.1', ''),              # D: Activity (GC01, GC02, etc)
-                    submenus.get('submenu-7.3', ''),              # E: Equipment
-                    submenus.get('submenu-7.4', ''),              # F: Duration (minutes)
-                    submenus.get('submenu-7.5', ''),              # G: Notes
-                    submenus.get('submenu-7.6', ''),              # H: Chemical Name
-                    submenus.get('submenu-7.7', ''),              # I: Amount Used
-                    submenus.get('submenu-7.8', '')               # J: Tank Size
+                    submenus.get('submenu-4.2', ''),              # C: Other Workers (number or names)
+                    submenus.get('submenu-4.1', ''),              # D: Activity (GC01, GC02, etc)
+                    submenus.get('submenu-4.3', ''),              # E: Equipment
+                    submenus.get('submenu-4.4', ''),              # F: Duration (minutes)
+                    submenus.get('submenu-4.5', ''),              # G: Notes
+                    submenus.get('submenu-4.6', ''),              # H: Chemical Name
+                    submenus.get('submenu-4.7', ''),              # I: Amount Used
+                    submenus.get('submenu-4.8', '')               # J: Tank Size
                 ]
                 gardencare_rows.append(gc_row)
 
@@ -353,44 +353,44 @@ def submit_log():
     fruitflowercare_rows = []
 
     # Prepare placeholders for submenu answers with empty defaults
-    a9_submenus = ['', '', '', '']   # submenu-9.2, 9.1, 9.3, 9.4
-    a10_submenus = ['', '', '', '']  # submenu-10.2, 10.1, 10.3, 10.4
-    a11_submenus = ['', '', '', '', '']  # submenu-11.2, 11.1, 11.3, 11.4, 11.5
-    a12_submenus = ['', '', '', '', '', '', '']
+    a6_submenus = ['', '', '', '']   # submenu-6.2, 6.1, 6.3, 6.4
+    a7_submenus = ['', '', '', '']  # submenu-7.2, 7.1, 7.3, 7.4
+    a8_submenus = ['', '', '', '', '']  # submenu-8.2, 8.1, 8.3, 8.4, 8.5
+    a9_submenus = ['', '', '', '', '', '', '']
 
     # Collect submenu data from activities
     for activity in activities:
-        if activity.get('id') == '9':
+        if activity.get('id') == '6':
+            a6_submenus = [
+                submenus.get('submenu-6.2', ''),
+                submenus.get('submenu-6.1', ''),
+                submenus.get('submenu-6.3', ''),
+                submenus.get('submenu-6.4', '')
+            ]
+        elif activity.get('id') == '7':
+            a7_submenus = [
+                submenus.get('submenu-7.2', ''),
+                submenus.get('submenu-7.1', ''),
+                submenus.get('submenu-7.3', ''),
+                submenus.get('submenu-7.4', '')
+            ]
+        elif activity.get('id') == '8':
+            a8_submenus = [
+                submenus.get('submenu-8.2', ''),
+                submenus.get('submenu-8.1', ''),
+                submenus.get('submenu-8.3', ''),
+                submenus.get('submenu-8.4', ''),
+                submenus.get('submenu-8.5', '')
+            ]
+        elif activity.get('id') == '9':
             a9_submenus = [
                 submenus.get('submenu-9.2', ''),
                 submenus.get('submenu-9.1', ''),
                 submenus.get('submenu-9.3', ''),
-                submenus.get('submenu-9.4', '')
-            ]
-        elif activity.get('id') == '10':
-            a10_submenus = [
-                submenus.get('submenu-10.2', ''),
-                submenus.get('submenu-10.1', ''),
-                submenus.get('submenu-10.3', ''),
-                submenus.get('submenu-10.4', '')
-            ]
-        elif activity.get('id') == '11':
-            a11_submenus = [
-                submenus.get('submenu-11.2', ''),
-                submenus.get('submenu-11.1', ''),
-                submenus.get('submenu-11.3', ''),
-                submenus.get('submenu-11.4', ''),
-                submenus.get('submenu-11.5', '')
-            ]
-        elif activity.get('id') == '12':
-            a12_submenus = [
-                submenus.get('submenu-12.2', ''),
-                submenus.get('submenu-12.1', ''),
-                submenus.get('submenu-12.3', ''),
-                submenus.get('submenu-12.4', ''),
-                submenus.get('submenu-12.5', ''),
-                submenus.get('submenu-12.6', ''),
-                submenus.get('submenu-12.7', '')
+                submenus.get('submenu-9.4', ''),
+                submenus.get('submenu-9.5', ''),
+                submenus.get('submenu-9.6', ''),
+                submenus.get('submenu-9.7', '')
             ]
 
     # Build one combined row for the sheet
@@ -398,7 +398,7 @@ def submit_log():
         log_id,     # A
         date,       # B
         worker      # C
-    ] + a9_submenus + a10_submenus + a11_submenus + a12_submenus
+    ] + a6_submenus + a7_submenus + a8_submenus + a9_submenus
 
     fruitflowercare_rows.append(row)
 

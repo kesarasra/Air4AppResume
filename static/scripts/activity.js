@@ -26,7 +26,7 @@ document.getElementById('activity-form').addEventListener('submit', e => {
 
 
   // Collect multi-selects
-  ['submenu-7.2', 'submenu-8.2', 'submenu-9.2', 'submenu-10.2', 'submenu-11.2', 'submenu-12.2'].forEach(name => {
+  ['submenu-4.2', 'submenu-5.2', 'submenu-6.2', 'submenu-7.2', 'submenu-8.2', 'submenu-9.2'].forEach(name => {
     const workerInputs = document.querySelectorAll(`select[name="${name}"]`);
     const workerValues = Array.from(workerInputs).map(input => input.value.trim()).filter(Boolean);
     if (workerValues.length > 0) submenuAnswers[name] = workerValues.join(', ');
@@ -129,19 +129,19 @@ window.onload = () => {
           const cleanSubNum = sub.subNum.startsWith('.') ? sub.subNum.slice(1) : sub.subNum;
 
           if (/เวลาเริ่ม|เวลาสิ้นสุด/.test(sub.question)) {
-            // For Activity 8, these time inputs are handled below in the 8.3 block to avoid duplicates
-            if (activityId !== '8') {
+            // For Activity 5, these time inputs are handled below in the 5.3 block to avoid duplicates
+            if (activityId !== '5') {
               inputField = `<input type="time" name="submenu-${activityId}.${cleanSubNum}" required />`;
             }
           } else if (/ระยะเวลา/.test(sub.question)) {
             if (
               (activityId === '1' && cleanSubNum === '1') ||
-              (activityId === '7' && cleanSubNum === '4') ||
+              (activityId === '4' && cleanSubNum === '4') ||
+              (activityId === '5' && cleanSubNum === '3') ||
+              (activityId === '6' && cleanSubNum === '3') ||
+              (activityId === '7' && cleanSubNum === '3') ||
               (activityId === '8' && cleanSubNum === '3') ||
-              (activityId === '9' && cleanSubNum === '3') ||
-              (activityId === '10' && cleanSubNum === '3') ||
-              (activityId === '11' && cleanSubNum === '3') ||
-              (activityId === '12' && cleanSubNum === '3')
+              (activityId === '9' && cleanSubNum === '3')
             ) {
               inputField = `
                 <div style="margin-bottom: 6px;">
@@ -157,7 +157,7 @@ window.onload = () => {
             } else {
               inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" readonly placeholder="คำนวณอัตโนมัติ" />`;
             }
-          } else if (activityId === '6' && cleanSubNum === '1') {
+          } else if (activityId === '3' && cleanSubNum === '1') {
             inputField = `
               <select name="submenu-${activityId}.${cleanSubNum}" required>
                 <option value="">-- เลือกปัญหาที่พบ --</option>
@@ -174,22 +174,22 @@ window.onload = () => {
                 <option value="ความเครียดจากน้ำ">ความเครียดจากน้ำ</option>
               </select>
             `;
-          } else if (activityId === '6' && cleanSubNum === '2') {
+          } else if (activityId === '3' && cleanSubNum === '2') {
             inputField = `
               <input type="text" name="submenu-${activityId}.${cleanSubNum}" placeholder="โปรดระบุรายละเอียดเพิ่มเติมเกี่ยวกับปัญหาที่พบ" required />
             `;
-          } else if (activityId === '6' && cleanSubNum === '3') {
+          } else if (activityId === '3' && cleanSubNum === '3') {
             inputField = `
               <div style="margin-bottom: 6px;">
                 <label style="display: block; margin-bottom: 4px;">ระดับความรุนแรงของปัญหา:</label>
                 <div class="radio-group">
-                  <label><input type="radio" name="submenu-6.3" value="ต่ำ" required> ต่ำ</label>
-                  <label><input type="radio" name="submenu-6.3" value="ปานกลาง"> ปานกลาง</label>
-                  <label><input type="radio" name="submenu-6.3" value="สูง"> สูง</label>
+                  <label><input type="radio" name="submenu-3.3" value="ต่ำ" required> ต่ำ</label>
+                  <label><input type="radio" name="submenu-3.3" value="ปานกลาง"> ปานกลาง</label>
+                  <label><input type="radio" name="submenu-3.3" value="สูง"> สูง</label>
                 </div>
               </div>
             `;
-          } else if (activityId === '6' && cleanSubNum === '4') {
+          } else if (activityId === '3' && cleanSubNum === '4') {
             inputField = `
               <select name="submenu-${activityId}.${cleanSubNum}" required>
                 <option value="">-- โปรดเลือก --</option>
@@ -197,13 +197,13 @@ window.onload = () => {
                 <option value="ไม่ใช่">ไม่ใช่</option>
               </select>
             `;
-          } else if (activityId === '6' && cleanSubNum === '5') {
+          } else if (activityId === '3' && cleanSubNum === '5') {
             inputField = `
-              <input type="text" name="submenu-6.5" placeholder="ดำเนินการแก้ไขอย่างไร?" required />
+              <input type="text" name="submenu-3.5" placeholder="ดำเนินการแก้ไขอย่างไร?" required />
             `;
-          } else if (activityId === '7' && cleanSubNum === '1') {
+          } else if (activityId === '4' && cleanSubNum === '1') {
             inputField = `
-              <select name="submenu-7.1" id="submenu-7.1" required>
+              <select name="submenu-4.1" id="submenu-4.1" required>
                 <option value="">-- เลือกรหัสกิจกรรม --</option>
                 <option value="ตัดหญ้า">GC01 - ตัดหญ้า</option>
                 <option value="เก็บขยะ">GC02 - เก็บขยะ</option>
@@ -216,37 +216,37 @@ window.onload = () => {
                 <option value="อื่นๆ">GC09 - อื่นๆ</option>
               </select>
             `;
-          } else if (activityId === '7' && cleanSubNum === '2') {
+          } else if (activityId === '4' && cleanSubNum === '2') {
             inputField = `
-              <div id="submenu-7-2-container">
+              <div id="submenu-4-2-container">
                 <div class="worker-select-row">
-                  <select name="submenu-7.2" class="submenu-7-2-select">
+                  <select name="submenu-4.2" class="submenu-4-2-select">
                     <option value="">-- เลือกชื่อคนงาน --</option>
                   </select>
                   <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
                 </div>
-                <button type="button" class="add-worker-btn" data-activity-id="7">+ เพิ่มชื่อคนงาน</button>
+                <button type="button" class="add-worker-btn" data-activity-id="4">+ เพิ่มชื่อคนงาน</button>
               </div>
             `;
-          } else if (activityId === '7' && cleanSubNum === '3') {
-            inputField = `<input type="text" name="submenu-7.3" required/>`;
-          } else if (activityId === '7' && cleanSubNum === '4') {
+          } else if (activityId === '4' && cleanSubNum === '3') {
+            inputField = `<input type="text" name="submenu-4.3" required/>`;
+          } else if (activityId === '4' && cleanSubNum === '4') {
             inputField = `
               <div style="margin-bottom: 6px;">
-                <label>เวลาเริ่ม: <input type="time" id="start-7" required/></label>
+                <label>เวลาเริ่ม: <input type="time" id="start-4" required/></label>
               </div>
               <div style="margin-bottom: 6px;">
-                <label>เวลาสิ้นสุด: <input type="time" id="end-7" required/></label>
+                <label>เวลาสิ้นสุด: <input type="time" id="end-4" required/></label>
               </div>
               <div style="margin-bottom: 6px;">
                 <label>ระยะเวลา (นาที): 
-                  <input type="text" name="submenu-7.4" readonly placeholder="คำนวณอัตโนมัติ" required/>
+                  <input type="text" name="submenu-4.4" readonly placeholder="คำนวณอัตโนมัติ" required/>
                 </label>
               </div>
             `;
-          } else if (activityId === '8' && cleanSubNum === '1') {
+          } else if (activityId === '5' && cleanSubNum === '1') {
             inputField = `
-              <select name="submenu-8.1" required>
+              <select name="submenu-5.1" required>
                 <option value="">-- เลือกประเภทงานตัดแต่ง --</option>
                 <option value="ตัดกิ่งแห้ง/เสียหาย">TP01 - ตัดกิ่งแห้ง/เสียหาย</option>
                 <option value="ตัดกิ่งให้โปร่ง">TP02 - ตัดกิ่งให้โปร่ง</option>
@@ -256,7 +256,106 @@ window.onload = () => {
                 <option value="ตัดกิ่งล่าง">TP06 - ตัดกิ่งล่าง</option>
               </select>
             `;
-          } else if (activityId === '8' && cleanSubNum === '2') {
+          } else if (activityId === '5' && cleanSubNum === '2') {
+            inputField = `
+              <div id="submenu-5-2-container">
+                <div class="worker-select-row">
+                  <select name="submenu-5.2" class="submenu-5-2-select">
+                    <option value="">-- เลือกชื่อคนงาน --</option>
+                  </select>
+                  <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
+                </div>
+                <button type="button" class="add-worker-btn" data-activity-id="5">+ เพิ่มชื่อคนงาน</button>
+              </div>
+            `;
+          } else if (activityId === '5' && cleanSubNum === '4') {
+            inputField = `
+              <input type="text" name="submenu-5.4" />
+            `;
+          } else if (activityId === '6') {
+            // submenu-9.1: dropdown for pollination methods
+            if (cleanSubNum === '1') {
+              const methods = ['ผสมเกสรด้วยมือ', 'ฉีดพ่นแบบแห้ง', 'ฉีดพ่นแบบเปียก'];
+              inputField = `<select name="submenu-6.1" required>
+                <option value="">-- เลือกวิธีผสมเกสร --</option>
+                ${methods.map(m => `<option value="${m}">${m}</option>`).join('')}
+              </select>`;
+            } else if (cleanSubNum === '2') {
+              inputField = `
+                <div id="submenu-6-2-container">
+                  <div class="worker-select-row">
+                    <select name="submenu-6.2" class="submenu-6-2-select">
+                      <option value="">-- เลือกชื่อคนงาน --</option>
+                    </select>
+                    <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
+                  </div>
+                  <button type="button" class="add-worker-btn" data-activity-id="6">+ เพิ่มชื่อคนงาน</button>
+                </div>`;
+            } else if (cleanSubNum === '3') {
+              inputField = `
+                <div style="margin-bottom:6px;">
+                  <label>เวลาเริ่ม: <input type="time" id="start-6" /></label>
+                </div>
+                <div style="margin-bottom:6px;">
+                  <label>เวลาสิ้นสุด: <input type="time" id="end-6" /></label>
+                </div>
+                <div style="margin-bottom:6px;">
+                  <label>ระยะเวลา (นาที): 
+                    <input type="text" name="submenu-6.3" readonly placeholder="คำนวณอัตโนมัติ" />
+                  </label>
+                </div>`;
+            } else if (cleanSubNum === '4') {
+              inputField = `
+                <input type="text" name="submenu-6.4" />`;
+            }
+          } else if (activityId === '7') {
+            if (cleanSubNum === '1') {
+              inputField = `
+                <select name="submenu-7.1" required>
+                  <option value="">-- เลือกการอนุรักษ์ผลผลิต --</option>
+                  <option value="การห่อผลด้วยถุง">การห่อผลด้วยถุง</option>
+                  <option value="การค้ำกิ่ง">การค้ำกิ่ง</option>
+                </select>
+              `;
+            } else if (cleanSubNum === '2') {
+              inputField = `
+                <div id="submenu-7-2-container">
+                  <div class="worker-select-row">
+                    <select name="submenu-7.2" class="submenu-7-2-select">
+                      <option value="">-- เลือกชื่อคนงาน --</option>
+                    </select>
+                    <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
+                  </div>
+                  <button type="button" class="add-worker-btn" data-activity-id="7">+ เพิ่มชื่อคนงาน</button>
+                </div>
+              `;
+            } else if (cleanSubNum === '3') {
+              inputField = `
+                <div style="margin-bottom: 6px;">
+                  <label>เวลาเริ่ม: <input type="time" id="start-7" /></label>
+                </div>
+                <div style="margin-bottom: 6px;">
+                  <label>เวลาสิ้นสุด: <input type="time" id="end-7" /></label>
+                </div>
+                <div style="margin-bottom: 6px;">
+                  <label>ระยะเวลา (นาที): <input type="text" name="submenu-7.3" readonly placeholder="คำนวณอัตโนมัติ" /></label>
+                </div>
+              `;
+            } else if (cleanSubNum === '4') {
+              inputField = `<input type="text" name="submenu-7.4" />`;
+            } else {
+              inputField = `<input type="text" name="submenu-7.${cleanSubNum}" />`;
+            }
+          } else if (activityId === '8') {
+          if (cleanSubNum === '1') {
+            const methods = ['ตัดด้วยไม้เคียว', 'เก็บผลที่ร่วงเอง', 'เก็บด้วยมือ', 'รองด้วยถุงหรือผ้า'];
+            inputField = `
+              <select name="submenu-8.1" required>
+                <option value="">-- เลือกวิธีเก็บเกี่ยว --</option>
+                ${methods.map(m => `<option value="${m}">${m}</option>`).join('')}
+              </select>
+            `;
+          } else if (cleanSubNum === '2') {
             inputField = `
               <div id="submenu-8-2-container">
                 <div class="worker-select-row">
@@ -268,127 +367,28 @@ window.onload = () => {
                 <button type="button" class="add-worker-btn" data-activity-id="8">+ เพิ่มชื่อคนงาน</button>
               </div>
             `;
-          } else if (activityId === '8' && cleanSubNum === '4') {
-            inputField = `
-              <input type="text" name="submenu-8.4" />
-            `;
-          } else if (activityId === '9') {
-            // submenu-9.1: dropdown for pollination methods
-            if (cleanSubNum === '1') {
-              const methods = ['ผสมเกสรด้วยมือ', 'ฉีดพ่นแบบแห้ง', 'ฉีดพ่นแบบเปียก'];
-              inputField = `<select name="submenu-9.1" required>
-                <option value="">-- เลือกวิธีผสมเกสร --</option>
-                ${methods.map(m => `<option value="${m}">${m}</option>`).join('')}
-              </select>`;
-            } else if (cleanSubNum === '2') {
-              inputField = `
-                <div id="submenu-9-2-container">
-                  <div class="worker-select-row">
-                    <select name="submenu-9.2" class="submenu-9-2-select">
-                      <option value="">-- เลือกชื่อคนงาน --</option>
-                    </select>
-                    <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
-                  </div>
-                  <button type="button" class="add-worker-btn" data-activity-id="9">+ เพิ่มชื่อคนงาน</button>
-                </div>`;
-            } else if (cleanSubNum === '3') {
-              inputField = `
-                <div style="margin-bottom:6px;">
-                  <label>เวลาเริ่ม: <input type="time" id="start-9" /></label>
-                </div>
-                <div style="margin-bottom:6px;">
-                  <label>เวลาสิ้นสุด: <input type="time" id="end-9" /></label>
-                </div>
-                <div style="margin-bottom:6px;">
-                  <label>ระยะเวลา (นาที): 
-                    <input type="text" name="submenu-9.3" readonly placeholder="คำนวณอัตโนมัติ" />
-                  </label>
-                </div>`;
-            } else if (cleanSubNum === '4') {
-              inputField = `
-                <input type="text" name="submenu-9.4" />`;
-            }
-          } else if (activityId === '10') {
-            if (cleanSubNum === '1') {
-              inputField = `
-                <select name="submenu-10.1" required>
-                  <option value="">-- เลือกการอนุรักษ์ผลผลิต --</option>
-                  <option value="การห่อผลด้วยถุง">การห่อผลด้วยถุง</option>
-                  <option value="การค้ำกิ่ง">การค้ำกิ่ง</option>
-                </select>
-              `;
-            } else if (cleanSubNum === '2') {
-              inputField = `
-                <div id="submenu-10-2-container">
-                  <div class="worker-select-row">
-                    <select name="submenu-10.2" class="submenu-10-2-select">
-                      <option value="">-- เลือกชื่อคนงาน --</option>
-                    </select>
-                    <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
-                  </div>
-                  <button type="button" class="add-worker-btn" data-activity-id="10">+ เพิ่มชื่อคนงาน</button>
-                </div>
-              `;
-            } else if (cleanSubNum === '3') {
-              inputField = `
-                <div style="margin-bottom: 6px;">
-                  <label>เวลาเริ่ม: <input type="time" id="start-10" /></label>
-                </div>
-                <div style="margin-bottom: 6px;">
-                  <label>เวลาสิ้นสุด: <input type="time" id="end-10" /></label>
-                </div>
-                <div style="margin-bottom: 6px;">
-                  <label>ระยะเวลา (นาที): <input type="text" name="submenu-10.3" readonly placeholder="คำนวณอัตโนมัติ" /></label>
-                </div>
-              `;
-            } else if (cleanSubNum === '4') {
-              inputField = `<input type="text" name="submenu-10.4" />`;
-            } else {
-              inputField = `<input type="text" name="submenu-10.${cleanSubNum}" />`;
-            }
-          } else if (activityId === '11') {
-          if (cleanSubNum === '1') {
-            const methods = ['ตัดด้วยไม้เคียว', 'เก็บผลที่ร่วงเอง', 'เก็บด้วยมือ', 'รองด้วยถุงหรือผ้า'];
-            inputField = `
-              <select name="submenu-11.1" required>
-                <option value="">-- เลือกวิธีเก็บเกี่ยว --</option>
-                ${methods.map(m => `<option value="${m}">${m}</option>`).join('')}
-              </select>
-            `;
-          } else if (cleanSubNum === '2') {
-            inputField = `
-              <div id="submenu-11-2-container">
-                <div class="worker-select-row">
-                  <select name="submenu-11.2" class="submenu-11-2-select">
-                    <option value="">-- เลือกชื่อคนงาน --</option>
-                  </select>
-                  <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
-                </div>
-                <button type="button" class="add-worker-btn" data-activity-id="11">+ เพิ่มชื่อคนงาน</button>
-              </div>
-            `;
           } else if (cleanSubNum === '3') {
             inputField = `
               <div style="margin-bottom:6px;">
-                <label>เวลาเริ่ม: <input type="time" id="start-11" /></label>
+                <label>เวลาเริ่ม: <input type="time" id="start-8" /></label>
               </div>
               <div style="margin-bottom:6px;">
-                <label>เวลาสิ้นสุด: <input type="time" id="end-11" /></label>
+                <label>เวลาสิ้นสุด: <input type="time" id="end-8" /></label>
               </div>
               <div style="margin-bottom:6px;">
                 <label>ระยะเวลา (นาที): 
-                  <input type="text" name="submenu-11.3" readonly placeholder="คำนวณอัตโนมัติ" />
+                  <input type="text" name="submenu-8.3" readonly placeholder="คำนวณอัตโนมัติ" />
                 </label>
               </div>
             `;
           } else if (cleanSubNum === '4') {
-            inputField = `<input type="number" name="submenu-11.4" placeholder="น้ำหนักรวม (กก.)" min="0" step="0.01" />`;
+            inputField = `<input type="number" name="submenu-8.4" placeholder="น้ำหนักรวม (กก.)" min="0" step="0.01" />`;
           } else if (cleanSubNum === '5') {
-            inputField = `<input type="text" name="submenu-11.5" placeholder="หมายเหตุ" />`;
+            inputField = `<input type="text" name="submenu-8.5" placeholder="หมายเหตุ" />`;
           }
-        } else if (activityId === '12' && cleanSubNum === '1') {
+        } else if (activityId === '9' && cleanSubNum === '1') {
           inputField = `
-            <select name="submenu-12.1" id="submenu-12.1" required>
+            <select name="submenu-9.1" id="submenu-9.1" required>
               <option value="">-- เลือกวิธีฟื้นฟูต้นไม้ --</option>
               <option value="การตัดแต่งกิ่ง">PH01 - การตัดแต่งกิ่ง</option>
               <option value="การคลุมดิน">PH02 - การคลุมดิน</option>
@@ -398,34 +398,34 @@ window.onload = () => {
               <option value="การกำจัดวัชพืช">PH06 - การกำจัดวัชพืช</option>
             </select>
           `;
-        } else if (activityId === '12' && cleanSubNum === '2') {
+        } else if (activityId === '9' && cleanSubNum === '2') {
           inputField = `
-            <div id="submenu-12-2-container">
+            <div id="submenu-9-2-container">
               <div class="worker-select-row">
-                <select name="submenu-12.2" class="submenu-12-2-select">
+                <select name="submenu-9.2" class="submenu-9-2-select">
                   <option value="">-- เลือกชื่อคนงาน --</option>
                 </select>
                 <button type="button" class="remove-btn" title="ลบคนงานนี้">X</button>
               </div>
-              <button type="button" class="add-worker-btn" data-activity-id="12">+ เพิ่มชื่อคนงาน</button>
+              <button type="button" class="add-worker-btn" data-activity-id="9">+ เพิ่มชื่อคนงาน</button>
             </div>
           `;
-        } else if (activityId === '12' && cleanSubNum === '3') {
+        } else if (activityId === '9' && cleanSubNum === '3') {
           inputField = `
             <div style="margin-bottom: 6px;">
-              <label>เวลาเริ่ม: <input type="time" id="start-12" /></label>
+              <label>เวลาเริ่ม: <input type="time" id="start-9" /></label>
             </div>
             <div style="margin-bottom: 6px;">
-              <label>เวลาสิ้นสุด: <input type="time" id="end-12" /></label>
+              <label>เวลาสิ้นสุด: <input type="time" id="end-9" /></label>
             </div>
             <div style="margin-bottom: 6px;">
               <label>ระยะเวลา (นาที): 
-                <input type="text" name="submenu-12.3" readonly placeholder="คำนวณอัตโนมัติ" />
+                <input type="text" name="submenu-9.3" readonly placeholder="คำนวณอัตโนมัติ" />
               </label>
             </div>
           `;
-        } else if (activityId === '12' && cleanSubNum === '4') {
-          inputField = `<input type="text" name="submenu-12.4" />`;
+        } else if (activityId === '9' && cleanSubNum === '4') {
+          inputField = `<input type="text" name="submenu-9.4" />`;
         } else {
           inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" />`;
         }
@@ -443,28 +443,28 @@ window.onload = () => {
           `;
         }).join('');
 
-        if (activityId === '7') {
+        if (activityId === '4') {
           submenuContainer.innerHTML += `
             <div id="gc07-extra-fields" style="display:none; margin-top:10px; padding-left:10px; border-left:2px solid #ccc;">
               <div class="submenu-item">
-                <label>7.6 ชื่อสารเคมี:
-                  <input type="text" name="submenu-7.6" />
+                <label>4.6 ชื่อสารเคมี:
+                  <input type="text" name="submenu-4.6" />
                 </label>
               </div>
               <div class="submenu-item">
-                <label>7.7 ปริมาณที่ใช้:
-                  <input type="text" name="submenu-7.7" />
+                <label>4.7 ปริมาณที่ใช้:
+                  <input type="text" name="submenu-4.7" />
                 </label>
               </div>
               <div class="submenu-item">
-                <label>7.8 ขนาดถัง:
-                  <input type="text" name="submenu-7.8" />
+                <label>4.8 ขนาดถัง:
+                  <input type="text" name="submenu-4.8" />
                 </label>
               </div>
             </div>
           `;
 
-          const gc07Select = submenuContainer.querySelector('[id="submenu-7.1"]');
+          const gc07Select = submenuContainer.querySelector('[id="submenu-4.1"]');
           const gc07extraFields = submenuContainer.querySelector('#gc07-extra-fields');
 
           if (gc07Select && gc07extraFields) {
@@ -487,28 +487,28 @@ window.onload = () => {
           }
         }
 
-        if (activityId === '12') {
+        if (activityId === '9') {
           submenuContainer.innerHTML += `
             <div id="ph-extra-fields" style="display:none; margin-top:10px; padding-left:10px; border-left:2px solid #ccc;">
               <div class="submenu-item">
-                <label>12.5 ชื่อสารเคมี:
-                  <input type="text" name="submenu-12.5" />
+                <label>9.5 ชื่อสารเคมี:
+                  <input type="text" name="submenu-9.5" />
                 </label>
               </div>
               <div class="submenu-item">
-                <label>12.6 ปริมาณที่ใช้:
-                  <input type="text" name="submenu-12.6" />
+                <label>9.6 ปริมาณที่ใช้:
+                  <input type="text" name="submenu-9.6" />
                 </label>
               </div>
               <div class="submenu-item">
-                <label>12.7 ขนาดถัง:
-                  <input type="text" name="submenu-12.7" />
+                <label>9.7 ขนาดถัง:
+                  <input type="text" name="submenu-9.7" />
                 </label>
               </div>
             </div>
           `;
 
-          const phSelect = submenuContainer.querySelector('[id="submenu-12.1"]');
+          const phSelect = submenuContainer.querySelector('[id="submenu-9.1"]');
           const phextraFields = submenuContainer.querySelector('#ph-extra-fields');
 
           console.log('phSelect:', phSelect);
@@ -525,7 +525,7 @@ window.onload = () => {
           }
         }
 
-        ['7', '8', '9', '10', '11', '12'].forEach(id => {
+        ['4', '5', '6', '7', '8', '9'].forEach(id => {
           const container2 = submenuContainer.querySelector(`#submenu-${id}-2-container`);
           if (!container2) return;
 
@@ -564,12 +564,12 @@ window.onload = () => {
           });
         });
 
-        ['1', '7', '8', '9', '10', '11', '12'].forEach(id => {
+        ['1', '4', '5', '6', '7', '8', '9'].forEach(id => {
           const startInput = submenuContainer.querySelector(`#start-${id}`);
           const endInput = submenuContainer.querySelector(`#end-${id}`);
           let durationInput;
-          if (id === '7') {
-            durationInput = submenuContainer.querySelector(`input[name='submenu-7.4']`);
+          if (id === '4') {
+            durationInput = submenuContainer.querySelector(`input[name='submenu-4.4']`);
           } else {
             durationInput = submenuContainer.querySelector(`input[name='submenu-${id}.1']`) || 
                             submenuContainer.querySelector(`input[name='submenu-${id}.3']`);
