@@ -46,6 +46,28 @@ document.getElementById('activity-form').addEventListener('submit', e => {
   window.location.href = 'confirm.html';
 });
 
+async function loadPesticideNamesFor46() {
+    try {
+        const response = await fetch('/api/pesticide-names');
+        if (!response.ok) throw new Error('Failed to fetch chemical names');
+
+        const names = await response.json();
+        const select = document.querySelector('[name="submenu-4.6"]');
+
+        select.innerHTML = '<option value="">-- โปรดเลือก --</option>';
+
+        names.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading chemical names:', error);
+    }
+}
+
+
 window.onload = () => {
   const treeIDs = getFromSession('treeIDs') || [];
   const summaryDiv = document.getElementById('tree-id-summary');
@@ -528,7 +550,7 @@ window.onload = () => {
             <div id="gc07-extra-fields" style="display:none; margin-top:10px; padding-left:10px; border-left:2px solid #ccc;">
               <div class="submenu-item">
                 <label>4.6 ชื่อสารเคมี:
-                  <input type="text" name="submenu-4.6" />
+                  <select name="submenu-4.6"></select>
                 </label>
               </div>
               <div class="submenu-item">
@@ -543,6 +565,8 @@ window.onload = () => {
               </div>
             </div>
           `;
+
+          loadPesticideNamesFor46();
 
           const gc07Select = submenuContainer.querySelector('[id="submenu-4.1"]');
           const gc07extraFields = submenuContainer.querySelector('#gc07-extra-fields');

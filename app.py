@@ -258,6 +258,28 @@ def get_formula_ids():
             'details': str(e)
         }), 500
 
+@app.route('/api/pesticide-names', methods=['GET'])
+def get_pesticide_names():
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        service = get_service()
+        sheet = service.spreadsheets()
+
+        result = sheet.values().get(
+            spreadsheetId=CHEMICALS_SHEET_ID,
+            range='Pesticide/Herbicide/Fungicide!B2:B'  # Thai names are in Column B
+        ).execute()
+
+        values = result.get('values', [])
+        names = [row[0].strip() for row in values if row and row[0].strip()]
+        return jsonify(names)
+
+    except Exception as e:
+        print("❌ ERROR in /api/chemical-names:", str(e))
+        return jsonify({'error': 'Failed to fetch chemical names', 'details': str(e)}), 500
+
 
 @app.route('/api/submit', methods=['POST'])
 def submit_log():
