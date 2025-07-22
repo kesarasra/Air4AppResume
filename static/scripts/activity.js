@@ -223,7 +223,8 @@ window.onload = () => {
               waitForElement('submenu-2-4', (select) => {
                 fetch('/api/formula-ids')
                   .then(res => res.json())
-                  .then(formulaIds => {
+                  .then(data => {
+                    const formulaIds = data.formula_ids || [];
                     formulaIds.forEach(id => {
                       const option = document.createElement('option');
                       option.value = id;

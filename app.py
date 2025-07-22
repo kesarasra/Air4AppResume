@@ -33,6 +33,7 @@ WORKER_SHEET = 'WorkerNames'
 LOG_SHEET = 'DailyLog'
 TREE_SHEET = 'CleanedSheet1'
 ACTIVITIES_SHEET = 'Activities'
+FORMULAIDS = 'FormuMetadata'
 
 # Admin/User credentials
 USERS = {
@@ -228,35 +229,21 @@ def get_submenus(activity_id):
 
     return jsonify(submenus)
 
-@app.route('/api/formula-ids', methods=['GET'])
+@app.route("/api/formula-ids")
 def get_formula_ids():
-    if 'username' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-
     try:
-        service = get_service()
-        sheet = service.spreadsheets()
-
         result = sheet.values().get(
             spreadsheetId=CHEMICALS_SHEET_ID,
-            range='Formulations!A2:A'
+            range=f"{FORMULAIDS}!A2:A",  # Skip header, get only Formula IDs
         ).execute()
 
-        values = result.get('values', [])
-        print("✅ Raw values from Formulations:", values)  # DEBUG
+        values = result.get("values", [])
+        formula_ids = [row[0] for row in values if row]
 
-        formula_ids = list({row[0].strip() for row in values if row and row[0].strip()})
-        formula_ids.sort()
-
-        print("✅ Cleaned formula IDs:", formula_ids)  # DEBUG
-        return jsonify(formula_ids)
-
+        return jsonify({"formula_ids": formula_ids})
     except Exception as e:
-        print("❌ ERROR in /api/formula-ids:", str(e))  # DEBUG LOG
-        return jsonify({
-            'error': 'Failed to fetch formula IDs',
-            'details': str(e)
-        }), 500
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/pesticide-names', methods=['GET'])
 def get_pesticide_names():
