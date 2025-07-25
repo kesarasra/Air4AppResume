@@ -443,12 +443,13 @@ def submit_log():
                 submenus.get('submenu-9.7', '')
             ]
 
-    # Build one combined row for the sheet
-    row = [
-        log_id,     # A
-        date,       # B
-        worker      # C
-    ] + a6_submenus + a7_submenus + a8_submenus + a9_submenus
+    # Only write if activity 6, 7, 8, or 9 was selected
+    if any(act.get('id') in ['6', '7', '8', '9'] for act in activities):
+        row = [
+            log_id,     # A
+            date,       # B
+            worker      # C
+        ] + a6_submenus + a7_submenus + a8_submenus + a9_submenus
 
     fruitflowercare_rows.append(row)
 
