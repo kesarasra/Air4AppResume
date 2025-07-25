@@ -4,8 +4,8 @@ document.getElementById('activity-form').addEventListener('submit', e => {
   const checked = Array.from(document.querySelectorAll('input[name="activity"]:checked'))
     .map(cb => cb.value);
 
-  if (checked.length < 1 || checked.length > 7) {
-    alert("Please select between 1 and 7 activities.");
+  if (checked.length < 1) {
+    alert("Please select at least one activity.");
     return;
   }
 
