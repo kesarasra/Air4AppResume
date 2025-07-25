@@ -451,14 +451,14 @@ def submit_log():
             worker      # C
         ] + a6_submenus + a7_submenus + a8_submenus + a9_submenus
 
-    fruitflowercare_rows.append(row)
+        fruitflowercare_rows.append(row)
 
-    sheet_service.values().append(
-        spreadsheetId=DAILY_LOGGER_ID,
-        range="'Fruit/FlowerCare'!A1",
-        valueInputOption="RAW",
-        body={"values": fruitflowercare_rows}
-    ).execute()
+        sheet_service.values().append(
+            spreadsheetId=DAILY_LOGGER_ID,
+            range="'Fruit/FlowerCare'!A1",
+            valueInputOption="RAW",
+            body={"values": fruitflowercare_rows}
+        ).execute()
 
 
     return jsonify({

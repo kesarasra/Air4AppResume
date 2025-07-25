@@ -146,6 +146,10 @@ window.onload = async () => {
     } catch (err) {
       console.error('Error submitting log:', err);
       alert('เกิดข้อผิดพลาดในการส่งข้อมูล กรุณาลองใหม่อีกครั้ง');
+      if (err instanceof Response) {
+        const errorText = await err.text();
+        console.error('Server responded with:', errorText);
+      }
     }
   });
 };
