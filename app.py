@@ -356,7 +356,7 @@ def submit_log():
             submenus.get('submenu-2.8', ''),  # Notes
             submenus.get('submenu-3.1', ''),  # Tree Problem
             submenus.get('submenu-3.2', ''),  # Problem Details
-            submenus.get('submenu-3.3', ''),  # 🔸 Severity of Problem (radio buttons)
+            submenus.get('submenu-3.3', ''),  # Severity of Problem (radio buttons)
             submenus.get('submenu-3.4', ''),  # Sample Submitted
             submenus.get('submenu-3.5', ''),  # Corrective Action
             submenus.get('submenu-5.1', ''),  # Tree Trimming Code
@@ -496,7 +496,7 @@ def admin_view_log():
             }
         },
         'TreeCare': {
-            'range': 'TreeCare!A1:N',
+            'range': 'TreeCare!A1:W',
             'column_map': {
                 'Log ID': 0,
                 'Date': 1,
