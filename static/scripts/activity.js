@@ -67,6 +67,13 @@ async function loadPesticideNamesFor46() {
     }
 }
 
+// Remove 'required' attribute from all worker select dropdowns inside worker-select-row
+function disableWorkerSelectRequired() {
+  document.querySelectorAll('.worker-select-row select').forEach(select => {
+    select.removeAttribute('required');
+  });
+}
+
 
 window.onload = () => {
   const treeIDs = getFromSession('treeIDs') || [];
@@ -592,27 +599,71 @@ window.onload = () => {
           }
         }
 
-        if (activityId === '9') {
-          submenuContainer.innerHTML += `
-            <div id="ph-extra-fields" style="display:none; margin-top:10px; padding-left:10px; border-left:2px solid #ccc;">
-              <div class="submenu-item">
-                <label>9.5 ชื่อสารเคมี:
-                  <input type="text" name="submenu-9.5" />
-                </label>
+          if (activityId === '9') {
+            submenuContainer.innerHTML += `
+              <div id="ph-extra-fields" style="display:none; margin-top:10px; padding-left:10px; border-left:2px solid #ccc;">
+                <div class="submenu-item">
+                  <label>9.5 ชื่อสารเคมี
+                    <select name="submenu-9.5" id="submenu-9-5" required>
+                      <option value="">-- เลือกรหัสสูตรปุ๋ย --</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="submenu-item">
+                  <label>9.6 ปริมาณปุ๋ยที่ใช้</label>
+                  <div style="display:flex; gap:10px;">
+                    <input type="number" name="submenu-9.6.1" placeholder="ปริมาณ" min="0" step="0.01" required />
+                    <select name="submenu-9.6.2" required>
+                      <option value="">หน่วย</option>
+                      <option value="kg">kg</option>
+                      <option value="L">L</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="submenu-item">
+                  <label>9.7 พื้นที่ของต้นไม้ที่เน้น
+                    <select name="submenu-9.7" required>
+                      <option value="">-- เลือกบริเวณของต้นไม้ --</option>
+                      <option value="ใบ">ใบ</option>
+                      <option value="กิ่ง">กิ่ง</option>
+                      <option value="ผล">ผล</option>
+                      <option value="โคนต้น">โคนต้น</option>
+                    </select>
+                  </label>
+                </div>
               </div>
-              <div class="submenu-item">
-                <label>9.6 ปริมาณที่ใช้:
-                  <input type="text" name="submenu-9.6" />
-                </label>
-              </div>
-              <div class="submenu-item">
-                <label>9.7 ขนาดถัง:
-                  <input type="text" name="submenu-9.7" />
-                </label>
-              </div>
-            </div>
-          `;
+            `;
 
+            // Wait for dropdown to appear, then populate with formula IDs
+            const waitForElement = (id, callback, interval = 50, maxAttempts = 20) => {
+              let attempts = 0;
+              const timer = setInterval(() => {
+                const el = document.getElementById(id);
+                if (el || attempts >= maxAttempts) {
+                  clearInterval(timer);
+                  if (el) callback(el);
+                }
+                attempts++;
+              }, interval);
+            };
+
+            waitForElement('submenu-9-5', (select) => {
+              fetch('/api/formula-ids')
+                .then(res => res.json())
+                .then(data => {
+                  const formulaIds = data.formula_ids || [];
+                  formulaIds.forEach(id => {
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.textContent = id;
+                    select.appendChild(option);
+                  });
+                })
+                .catch(err => {
+                  console.error('Failed to load formula IDs for submenu 9.5:', err);
+                });
+            });
+        
           const phSelect = submenuContainer.querySelector('[id="submenu-9.1"]');
           const phextraFields = submenuContainer.querySelector('#ph-extra-fields');
 
@@ -709,5 +760,6 @@ window.onload = () => {
     } else {
       submenuContainer.innerHTML = '';
     }
+    disableWorkerSelectRequired();
   });
 };
