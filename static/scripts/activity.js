@@ -563,12 +563,25 @@ window.onload = () => {
               </div>
               <div class="submenu-item">
                 <label>4.7 ปริมาณที่ใช้:
-                  <input type="text" name="submenu-4.7" />
+                  <div style="display:flex; gap:10px;">
+                    <input type="number" name="submenu-4.7.1" placeholder="ปริมาณ" min="0" step="0.01" required />
+                    <select name="submenu-4.7.2" required>
+                      <option value="">หน่วย</option>
+                      <option value="kg">kg</option>
+                      <option value="L">L</option>
+                    </select>
+                  </div>
                 </label>
               </div>
               <div class="submenu-item">
                 <label>4.8 ขนาดถัง:
-                  <input type="text" name="submenu-4.8" />
+                  <select name="submenu-4.8" required>
+                      <option value="">-- เลือกบริเวณของต้นไม้ --</option>
+                      <option value="ใบ">ใบ</option>
+                      <option value="กิ่ง">กิ่ง</option>
+                      <option value="ผล">ผล</option>
+                      <option value="โคนต้น">โคนต้น</option>
+                    </select>
                 </label>
               </div>
             </div>
@@ -647,39 +660,63 @@ window.onload = () => {
               }, interval);
             };
 
-            waitForElement('submenu-9-5', (select) => {
-              fetch('/api/formula-ids')
+            const loadChemicals = (select, type) => {
+              const urlMap = {
+                'PH04': '/api/formula-ids',
+                'PH05': '/api/pesticide-names',
+                'PH06': '/api/pesticide-names'
+              };
+              const url = urlMap[type];
+              if (!url) return;
+
+              fetch(url)
                 .then(res => res.json())
                 .then(data => {
-                  const formulaIds = data.formula_ids || [];
-                  formulaIds.forEach(id => {
+                  let names = [];
+                  if (type === 'PH04') {
+                    // /api/formula-ids returns { formula_ids: [...] }
+                    names = data.formula_ids || [];
+                  } else {
+                    // /api/pesticide-names returns an array directly
+                    names = Array.isArray(data) ? data : [];
+                  }
+                  select.innerHTML = '<option value="">-- เลือกรายการสารเคมี --</option>';
+                  names.forEach(name => {
                     const option = document.createElement('option');
-                    option.value = id;
-                    option.textContent = id;
+                    option.value = name;
+                    option.textContent = name;
                     select.appendChild(option);
                   });
                 })
                 .catch(err => {
-                  console.error('Failed to load formula IDs for submenu 9.5:', err);
+                  console.error(`Failed to load ${type} names for submenu 9.5:`, err);
                 });
-            });
-        
-          const phSelect = submenuContainer.querySelector('[id="submenu-9.1"]');
-          const phextraFields = submenuContainer.querySelector('#ph-extra-fields');
-
-          console.log('phSelect:', phSelect);
-          console.log('phextraFields:', phextraFields);
-
-          if (phSelect && phextraFields) {
-            const togglePHFields = () => {
-              const selectedText = phSelect.options[phSelect.selectedIndex].text.toUpperCase();
-              const show = ['PH04', 'PH05', 'PH06'].some(code => selectedText.startsWith(code));
-              phextraFields.style.display = show ? 'block' : 'none';
             };
-            phSelect.addEventListener('change', togglePHFields);
-            togglePHFields(); // initial state
+
+            waitForElement('submenu-9-5', (select9_5) => {
+              const phSelect = submenuContainer.querySelector('[id="submenu-9.1"]');
+              const phextraFields = submenuContainer.querySelector('#ph-extra-fields');
+
+              if (phSelect && phextraFields) {
+                const updateFieldsAndLoad = () => {
+                  const selectedText = phSelect.options[phSelect.selectedIndex]?.text?.toUpperCase() || '';
+                  const show = ['PH04', 'PH05', 'PH06'].some(code => selectedText.startsWith(code));
+                  phextraFields.style.display = show ? 'block' : 'none';
+
+                  if (selectedText.startsWith('PH04')) {
+                    loadChemicals(select9_5, 'PH04');
+                  } else if (selectedText.startsWith('PH05')) {
+                    loadChemicals(select9_5, 'PH05');
+                  } else if (selectedText.startsWith('PH06')) {
+                    loadChemicals(select9_5, 'PH06');
+                  }
+                };
+
+                phSelect.addEventListener('change', updateFieldsAndLoad);
+                updateFieldsAndLoad(); // initial
+              }
+            });
           }
-        }
 
         ['2', '4', '5', '6', '7', '8', '9'].forEach(id => {
           const container2 = submenuContainer.querySelector(`#submenu-${id}-2-container`);
