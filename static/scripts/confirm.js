@@ -82,19 +82,38 @@ window.onload = async () => {
 
       const matchingKeys = Object.keys(submenus).filter(k => k.startsWith(prefix));
 
-      matchingKeys.forEach(key => {
-        const subNum = key.replace(prefix, ''); // e.g., "1"
-        const fullKey = prefix + subNum;  
-        const questionText = extraSubmenuLabels[fullKey] || questionMap['.' + subNum] || `คำถาม ${subNum}`;
-        const value = submenus[key];
+      const grouped = {};
 
+      matchingKeys.forEach(key => {
+        const subNum = key.replace(prefix, ''); // e.g., "7.1" or "7"
+        const [main, sub] = subNum.split('.'); // main = "7", sub = "1"
+
+        if (sub) {
+          if (!grouped[main]) grouped[main] = {};
+          grouped[main][sub] = submenus[key];
+        } else {
+          grouped[subNum] = submenus[key];
+        }
+      });
+
+      Object.entries(grouped).forEach(([subNum, value]) => {
+        const fullKey = prefix + subNum;
+        const questionText = extraSubmenuLabels[fullKey] || questionMap['.' + subNum] || `คำถาม ${subNum}`;
         const item = document.createElement('li');
-        item.textContent = `${questionText}: ${value}`;
+
+        if (typeof value === 'object' && value['1'] && value['2']) {
+          item.textContent = `${questionText}: ${value['1']} ${value['2']}`;
+        } else if (typeof value === 'object') {
+          item.textContent = `${questionText}: ${value['1'] || value['2'] || ''}`;
+        } else {
+          item.textContent = `${questionText}: ${value}`;
+        }
+
         submenuList.appendChild(item);
       });
 
-      if (matchingKeys.length > 0) li.appendChild(submenuList);
-      activitiesList.appendChild(li);
+      li.appendChild(submenuList); // ✅ Append the answers list to the activity <li>
+      activitiesList.appendChild(li); // ✅ Also already present in your code
     }
   } else {
     activitiesList.innerHTML = '<li>ไม่มีการเลือกกิจกรรม</li>';
@@ -130,7 +149,6 @@ window.onload = async () => {
         })),
       submenus
     };
-
 
     try {
       const response = await fetch('/api/submit', {

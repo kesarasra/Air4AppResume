@@ -32,7 +32,31 @@ document.getElementById('activity-form').addEventListener('submit', e => {
     if (workerValues.length > 0) submenuAnswers[name] = workerValues.join(', ');
   });
 
+  // Merge submenu-4.7.1 and submenu-4.7.2 into submenu-4.7
+  const amount = submenuAnswers['submenu-4.7.1'] || '';
+  const unit = submenuAnswers['submenu-4.7.2'] || '';
+
+  if (amount || unit) {
+    submenuAnswers['submenu-4.7'] = `${amount} ${unit}`.trim();
+  }
+
+  delete submenuAnswers['submenu-4.7.1'];
+  delete submenuAnswers['submenu-4.7.2'];
+
+  // Merge submenu-9.6.1 and submenu-9.6.2 into submenu-9.6
+  const amount96 = submenuAnswers['submenu-9.6.1'] || '';
+  const unit96 = submenuAnswers['submenu-9.6.2'] || '';
+
+  if (amount96 || unit96) {
+    submenuAnswers['submenu-9.6'] = `${amount96} ${unit96}`.trim();
+  }
+
+  delete submenuAnswers['submenu-9.6.1'];
+  delete submenuAnswers['submenu-9.6.2'];
+
+  // Now save the cleaned submenuAnswers object
   saveToSession('submenus', submenuAnswers);
+
 
   const worker = getFromSession('workerName');
   const date = getFromSession('logDate');
@@ -593,7 +617,7 @@ window.onload = () => {
           const gc07extraFields = submenuContainer.querySelector('#gc07-extra-fields');
 
           if (gc07Select && gc07extraFields) {
-            const gc07Inputs = gc07extraFields.querySelectorAll('input');
+            const gc07Inputs = gc07extraFields.querySelectorAll('input, select');
 
             const toggleGC07Fields = () => {
               const isGC07 = gc07Select.value === 'พ่นสารเคมี';
