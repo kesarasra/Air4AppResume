@@ -405,7 +405,7 @@ def submit_log():
     # Prepare placeholders for submenu answers with empty defaults
     a6_submenus = ['', '', '', '']   # submenu-6.2, 6.1, 6.3, 6.4
     a7_submenus = ['', '', '', '']  # submenu-7.2, 7.1, 7.3, 7.4
-    a8_submenus = ['', '', '', '', '']  # submenu-8.2, 8.1, 8.3, 8.4, 8.5
+    a8_submenus = ['', '', '', '', '', '']  # submenu-8.2, 8.1, 8.3, 8.4, 8.5
     a9_submenus = ['', '', '', '', '', '', '']
 
     # Collect submenu data from activities
@@ -430,7 +430,8 @@ def submit_log():
                 submenus.get('submenu-8.1', ''),
                 submenus.get('submenu-8.3', ''),
                 submenus.get('submenu-8.4', ''),
-                submenus.get('submenu-8.5', '')
+                submenus.get('submenu-8.5', ''),
+                submenus.get('submenu-8.6', '')
             ]
         elif activity.get('id') == '9':
             a9_submenus = [
@@ -440,7 +441,8 @@ def submit_log():
                 submenus.get('submenu-9.4', ''),
                 submenus.get('submenu-9.5', ''),
                 submenus.get('submenu-9.6', ''),
-                submenus.get('submenu-9.7', '')
+                submenus.get('submenu-9.7', ''),
+                submenus.get('submenu-9.8', '')
             ]
 
     # Only write if activity 6, 7, 8, or 9 was selected
@@ -549,14 +551,16 @@ def admin_view_log():
                 'Harvest Method': 12,
                 'Duration (Harvest)': 13,
                 'Total Weight Harvest (kgs)': 14,
-                'Notes (Harvest)': 15,
-                'Other Workers (Post-Harvest)': 16,
-                'Post-Harvest Method': 17,
-                'Duration (Post-Harvest)': 18,
-                'Notes (Post-Harvest)': 19,
-                'Chemical Name': 20,
-                'Amount Used': 21,
-                'Tank Size': 22
+                'Equipment Used': 15,
+                'Notes (Harvest)': 16,
+                'Other Workers (Post-Harvest)': 17,
+                'Post-Harvest Method': 18,
+                'Duration (Post-Harvest)': 19,
+                'Equipment Used': 20,
+                'Notes (Post-Harvest)': 21,
+                'Chemical Name': 22,
+                'Amount Used': 23,
+                'Tank Size': 24
             }
         }
     }

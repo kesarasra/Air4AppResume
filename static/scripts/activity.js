@@ -43,16 +43,16 @@ document.getElementById('activity-form').addEventListener('submit', e => {
   delete submenuAnswers['submenu-4.7.1'];
   delete submenuAnswers['submenu-4.7.2'];
 
-  // Merge submenu-9.6.1 and submenu-9.6.2 into submenu-9.6
-  const amount96 = submenuAnswers['submenu-9.6.1'] || '';
-  const unit96 = submenuAnswers['submenu-9.6.2'] || '';
+  // Merge submenu-9.7.1 and submenu-9.7.2 into submenu-9.7
+  const amount97 = submenuAnswers['submenu-9.7.1'] || '';
+  const unit97 = submenuAnswers['submenu-9.7.2'] || '';
 
-  if (amount96 || unit96) {
-    submenuAnswers['submenu-9.6'] = `${amount96} ${unit96}`.trim();
+  if (amount97 || unit97) {
+    submenuAnswers['submenu-9.7'] = `${amount97} ${unit97}`.trim();
   }
 
-  delete submenuAnswers['submenu-9.6.1'];
-  delete submenuAnswers['submenu-9.6.2'];
+  delete submenuAnswers['submenu-9.7.1'];
+  delete submenuAnswers['submenu-9.7.2'];
 
   // Now save the cleaned submenuAnswers object
   saveToSession('submenus', submenuAnswers);
@@ -518,7 +518,9 @@ window.onload = () => {
           } else if (cleanSubNum === '4') {
             inputField = `<input type="number" name="submenu-8.4" placeholder="น้ำหนักรวม (กก.)" min="0" step="0.01" />`;
           } else if (cleanSubNum === '5') {
-            inputField = `<input type="text" name="submenu-8.5" placeholder="หมายเหตุ" />`;
+            inputField = `<input type="text" name="submenu-8.5" placeholder="อุปกรณ์หรือยานพาหนะที่ใช้" />`;
+          } else if (cleanSubNum === '6') {
+            inputField = `<input type="text" name="submenu-8.6" placeholder="ข้อสังเกตที่ต้องบันทึก" />`;
           }
         } else if (activityId === '9' && cleanSubNum === '1') {
           inputField = `
@@ -558,8 +560,10 @@ window.onload = () => {
               </label>
             </div>
           `;
-        } else if (activityId === '9' && cleanSubNum === '4') {
-          inputField = `<input type="text" name="submenu-9.4" />`;
+        } else if (cleanSubNum === '4') {
+          inputField = `<input type="text" name="submenu-9.4" placeholder="อุปกรณ์หรือยานพาหนะที่ใช้" />`;
+        } else if (cleanSubNum === '5') {
+          inputField = `<input type="text" name="submenu-9.5" placeholder="ข้อสังเกตที่ต้องบันทึก" />`;
         } else {
           inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" />`;
         }
@@ -640,17 +644,17 @@ window.onload = () => {
             submenuContainer.innerHTML += `
               <div id="ph-extra-fields" style="display:none; margin-top:10px; padding-left:10px; border-left:2px solid #ccc;">
                 <div class="submenu-item">
-                  <label>9.5 ชื่อสารเคมี
-                    <select name="submenu-9.5" id="submenu-9-5" required>
+                  <label>9.6 ชื่อสารเคมี
+                    <select name="submenu-9.6" id="submenu-9-6" required>
                       <option value="">-- เลือกรหัสสูตรปุ๋ย --</option>
                     </select>
                   </label>
                 </div>
                 <div class="submenu-item">
-                  <label>9.6 ปริมาณปุ๋ยที่ใช้</label>
+                  <label>9.7 ปริมาณปุ๋ยที่ใช้</label>
                   <div style="display:flex; gap:10px;">
-                    <input type="number" name="submenu-9.6.1" placeholder="ปริมาณ" min="0" step="0.01" required />
-                    <select name="submenu-9.6.2" required>
+                    <input type="number" name="submenu-9.7.1" placeholder="ปริมาณ" min="0" step="0.01" required />
+                    <select name="submenu-9.7.2" required>
                       <option value="">หน่วย</option>
                       <option value="kg">kg</option>
                       <option value="L">L</option>
@@ -658,8 +662,8 @@ window.onload = () => {
                   </div>
                 </div>
                 <div class="submenu-item">
-                  <label>9.7 พื้นที่ของต้นไม้ที่เน้น
-                    <select name="submenu-9.7" required>
+                  <label>9.8 พื้นที่ของต้นไม้ที่เน้น
+                    <select name="submenu-9.8" required>
                       <option value="">-- เลือกบริเวณของต้นไม้ --</option>
                       <option value="ใบ">ใบ</option>
                       <option value="กิ่ง">กิ่ง</option>
@@ -713,11 +717,11 @@ window.onload = () => {
                   });
                 })
                 .catch(err => {
-                  console.error(`Failed to load ${type} names for submenu 9.5:`, err);
+                  console.error(`Failed to load ${type} names for submenu 9.6:`, err);
                 });
             };
 
-            waitForElement('submenu-9-5', (select9_5) => {
+            waitForElement('submenu-9-6', (select9_6) => {
               const phSelect = submenuContainer.querySelector('[id="submenu-9.1"]');
               const phextraFields = submenuContainer.querySelector('#ph-extra-fields');
 
@@ -727,12 +731,25 @@ window.onload = () => {
                   const show = ['PH04', 'PH05', 'PH06'].some(code => selectedText.startsWith(code));
                   phextraFields.style.display = show ? 'block' : 'none';
 
+                  const toggleRequired = (selector, enable) => {
+                    phextraFields.querySelectorAll(selector).forEach(el => {
+                      if (enable) {
+                        el.setAttribute('required', 'required');
+                      } else {
+                        el.removeAttribute('required');
+                      }
+                    });
+                  };
+
+                  // If visible, make required; if hidden, remove required
+                  toggleRequired('select, input', show);
+
                   if (selectedText.startsWith('PH04')) {
-                    loadChemicals(select9_5, 'PH04');
+                    loadChemicals(select9_6, 'PH04');
                   } else if (selectedText.startsWith('PH05')) {
-                    loadChemicals(select9_5, 'PH05');
+                    loadChemicals(select9_6, 'PH05');
                   } else if (selectedText.startsWith('PH06')) {
-                    loadChemicals(select9_5, 'PH06');
+                    loadChemicals(select9_6, 'PH06');
                   }
                 };
 
