@@ -344,7 +344,9 @@ def submit_log():
             date,
             worker,
             submenus.get('submenu-1.1', ''),  # Watering Duration
-            submenus.get('submenu-1.2', ''),  # Notes
+            submenus.get('submenu-1.2', ''),  # Start Pressure Gauge
+            submenus.get('submenu-1.3', ''),  # End Pressure Gauge
+            submenus.get('submenu-1.4', ''),  # Notes
             submenus.get('submenu-2.1', ''),  # Fertilizing Method
             submenus.get('submenu-2.2', ''),  # Other Workers
             submenus.get('submenu-2.3', ''),  # Duration (mins)

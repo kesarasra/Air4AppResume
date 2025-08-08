@@ -211,6 +211,16 @@ window.onload = () => {
             } else {
               inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" readonly placeholder="คำนวณอัตโนมัติ" />`;
             }
+            } else if (cleanSubNum === '2') {
+              // Start Pressure Gauge
+              inputField = `<input type="number" name="submenu-1.2" placeholder="ค่าก่อนเริ่มรดน้ำ" step="0.01" required />`;
+            } else if (cleanSubNum === '3') {
+              // End Pressure Gauge
+              inputField = `<input type="number" name="submenu-1.3" placeholder="ค่าหลังรดน้ำ" step="0.01" required />`;
+              } else if (cleanSubNum === '4') {
+              // Notes
+              inputField = `<input type="text" name="submenu-1.4" placeholder="บันทึกเพิ่มเติม" />`;
+              
           } else if (activityId === '2' && cleanSubNum === '1') {
             inputField = `
               <select name="submenu-2.1" required>
