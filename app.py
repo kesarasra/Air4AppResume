@@ -407,7 +407,7 @@ def submit_log():
     # Prepare placeholders for submenu answers with empty defaults
     a6_submenus = ['', '', '', '']   # submenu-6.2, 6.1, 6.3, 6.4
     a7_submenus = ['', '', '', '']  # submenu-7.2, 7.1, 7.3, 7.4
-    a8_submenus = ['', '', '', '', '', '']  # submenu-8.2, 8.1, 8.3, 8.4, 8.5
+    a8_submenus = ['', '', '', '', '', '', '']  # submenu-8.2, 8.1, 8.3, 8.4, 8.5, 8.6, 8.7
     a9_submenus = ['', '', '', '', '', '', '']
 
     # Collect submenu data from activities
@@ -433,7 +433,8 @@ def submit_log():
                 submenus.get('submenu-8.3', ''),
                 submenus.get('submenu-8.4', ''),
                 submenus.get('submenu-8.5', ''),
-                submenus.get('submenu-8.6', '')
+                submenus.get('submenu-8.6', ''),
+                submenus.get('submenu-8.7', '')
             ]
         elif activity.get('id') == '9':
             a9_submenus = [

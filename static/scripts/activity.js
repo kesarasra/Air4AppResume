@@ -43,6 +43,21 @@ document.getElementById('activity-form').addEventListener('submit', e => {
   delete submenuAnswers['submenu-4.7.1'];
   delete submenuAnswers['submenu-4.7.2'];
 
+  // Handle submenu 8.6 checkboxes separately
+  const cleanedCheckbox = document.querySelector('input[name="submenu-8.6.cleaned"]');
+  const packagedCheckbox = document.querySelector('input[name="submenu-8.6.packaged"]');
+
+  const cleanedChecked = cleanedCheckbox && cleanedCheckbox.checked;
+  const packagedChecked = packagedCheckbox && packagedCheckbox.checked;
+
+  let cleanedPackagedValues = [];
+  if (cleanedChecked) cleanedPackagedValues.push('cleaned');
+  if (packagedChecked) cleanedPackagedValues.push('packaged');
+
+  if (cleanedPackagedValues.length > 0) {
+    submenuAnswers['submenu-8.6'] = cleanedPackagedValues.join(', ');
+  }
+
   // Merge submenu-9.7.1 and submenu-9.7.2 into submenu-9.7
   const amount97 = submenuAnswers['submenu-9.7.1'] || '';
   const unit97 = submenuAnswers['submenu-9.7.2'] || '';
@@ -54,6 +69,7 @@ document.getElementById('activity-form').addEventListener('submit', e => {
   delete submenuAnswers['submenu-9.7.1'];
   delete submenuAnswers['submenu-9.7.2'];
 
+  console.log('Collected submenu answers:', submenuAnswers);
   // Now save the cleaned submenuAnswers object
   saveToSession('submenus', submenuAnswers);
 
@@ -71,24 +87,24 @@ document.getElementById('activity-form').addEventListener('submit', e => {
 });
 
 async function loadPesticideNamesFor46() {
-    try {
-        const response = await fetch('/api/pesticide-names');
-        if (!response.ok) throw new Error('Failed to fetch chemical names');
+  try {
+    const response = await fetch('/api/pesticide-names');
+    if (!response.ok) throw new Error('Failed to fetch chemical names');
 
-        const names = await response.json();
-        const select = document.querySelector('[name="submenu-4.6"]');
+    const names = await response.json();
+    const select = document.querySelector('[name="submenu-4.6"]');
 
-        select.innerHTML = '<option value="">-- โปรดเลือก --</option>';
+    select.innerHTML = '<option value="">-- โปรดเลือก --</option>';
 
-        names.forEach(name => {
-            const option = document.createElement('option');
-            option.value = name;
-            option.textContent = name;
-            select.appendChild(option);
-        });
-    } catch (error) {
-        console.error('Error loading chemical names:', error);
-    }
+    names.forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = name;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Error loading chemical names:', error);
+  }
 }
 
 // Remove 'required' attribute from all worker select dropdowns inside worker-select-row
@@ -163,7 +179,7 @@ window.onload = () => {
     .catch(err => {
       console.error('Error fetching worker names:', err);
       cachedWorkerNames = [];
-    }); 
+    });
 
   container.addEventListener('change', async (e) => {
     const checkbox = e.target.closest('input[name="activity"]');
@@ -211,16 +227,16 @@ window.onload = () => {
             } else {
               inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" readonly placeholder="คำนวณอัตโนมัติ" />`;
             }
-            } else if (cleanSubNum === '2') {
-              // Start Pressure Gauge
-              inputField = `<input type="number" name="submenu-1.2" placeholder="ค่าก่อนเริ่มรดน้ำ" step="0.01" required />`;
-            } else if (cleanSubNum === '3') {
-              // End Pressure Gauge
-              inputField = `<input type="number" name="submenu-1.3" placeholder="ค่าหลังรดน้ำ" step="0.01" required />`;
-              } else if (cleanSubNum === '4') {
-              // Notes
-              inputField = `<input type="text" name="submenu-1.4" placeholder="บันทึกเพิ่มเติม" />`;
-              
+          } else if (activityId === '1' && cleanSubNum === '2') {
+            // Start Pressure Gauge
+            inputField = `<input type="number" name="submenu-1.2" placeholder="ค่าก่อนเริ่มรดน้ำ" step="0.01" required />`;
+          } else if (activityId === '1' && cleanSubNum === '3') {
+            // End Pressure Gauge
+            inputField = `<input type="number" name="submenu-1.3" placeholder="ค่าหลังรดน้ำ" step="0.01" required />`;
+          } else if (activityId === '1' && cleanSubNum === '4') {
+            // Notes
+            inputField = `<input type="text" name="submenu-1.4" placeholder="บันทึกเพิ่มเติม" />`;
+
           } else if (activityId === '2' && cleanSubNum === '1') {
             inputField = `
               <select name="submenu-2.1" required>
@@ -244,39 +260,39 @@ window.onload = () => {
               </div>
             `;
           } else if (activityId === '2' && cleanSubNum === '4') {
-              inputField = `<select name="submenu-2.4" id="submenu-2-4" required>
+            inputField = `<select name="submenu-2.4" id="submenu-2-4" required>
                               <option value="">-- เลือกรหัสสูตรปุ๋ย --</option>
                             </select>`;
 
-              // Safe DOM polling
-              const waitForElement = (id, callback, interval = 50, maxAttempts = 20) => {
-                let attempts = 0;
-                const timer = setInterval(() => {
-                  const el = document.getElementById(id);
-                  if (el || attempts >= maxAttempts) {
-                    clearInterval(timer);
-                    if (el) callback(el);
-                  }
-                  attempts++;
-                }, interval);
-              };
+            // Safe DOM polling
+            const waitForElement = (id, callback, interval = 50, maxAttempts = 20) => {
+              let attempts = 0;
+              const timer = setInterval(() => {
+                const el = document.getElementById(id);
+                if (el || attempts >= maxAttempts) {
+                  clearInterval(timer);
+                  if (el) callback(el);
+                }
+                attempts++;
+              }, interval);
+            };
 
-              waitForElement('submenu-2-4', (select) => {
-                fetch('/api/formula-ids')
-                  .then(res => res.json())
-                  .then(data => {
-                    const formulaIds = data.formula_ids || [];
-                    formulaIds.forEach(id => {
-                      const option = document.createElement('option');
-                      option.value = id;
-                      option.textContent = id;
-                      select.appendChild(option);
-                    });
-                  })
-                  .catch(err => {
-                    console.error('Failed to load formula IDs:', err);
+            waitForElement('submenu-2-4', (select) => {
+              fetch('/api/formula-ids')
+                .then(res => res.json())
+                .then(data => {
+                  const formulaIds = data.formula_ids || [];
+                  formulaIds.forEach(id => {
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.textContent = id;
+                    select.appendChild(option);
                   });
-              });
+                })
+                .catch(err => {
+                  console.error('Failed to load formula IDs:', err);
+                });
+            });
           } else if (activityId === '2' && cleanSubNum === '5') {
             const treeParts = ['ใบ', 'กิ่ง', 'ผล', 'โคนต้น'];
             inputField = `
@@ -491,16 +507,16 @@ window.onload = () => {
               inputField = `<input type="text" name="submenu-7.${cleanSubNum}" />`;
             }
           } else if (activityId === '8') {
-          if (cleanSubNum === '1') {
-            const methods = ['ตัดด้วยไม้เคียว', 'เก็บผลที่ร่วงเอง', 'เก็บด้วยมือ', 'รองด้วยถุงหรือผ้า'];
-            inputField = `
+            if (cleanSubNum === '1') {
+              const methods = ['ตัดด้วยไม้เคียว', 'เก็บผลที่ร่วงเอง', 'เก็บด้วยมือ', 'รองด้วยถุงหรือผ้า'];
+              inputField = `
               <select name="submenu-8.1" required>
                 <option value="">-- เลือกวิธีเก็บเกี่ยว --</option>
                 ${methods.map(m => `<option value="${m}">${m}</option>`).join('')}
               </select>
             `;
-          } else if (cleanSubNum === '2') {
-            inputField = `
+            } else if (cleanSubNum === '2') {
+              inputField = `
               <div id="submenu-8-2-container">
                 <div class="worker-select-row">
                   <select name="submenu-8.2" class="submenu-8-2-select">
@@ -511,8 +527,8 @@ window.onload = () => {
                 <button type="button" class="add-worker-btn" data-activity-id="8">+ เพิ่มชื่อคนงาน</button>
               </div>
             `;
-          } else if (cleanSubNum === '3') {
-            inputField = `
+            } else if (cleanSubNum === '3') {
+              inputField = `
               <div style="margin-bottom:6px;">
                 <label>เวลาเริ่ม: <input type="time" id="start-8" /></label>
               </div>
@@ -525,15 +541,22 @@ window.onload = () => {
                 </label>
               </div>
             `;
-          } else if (cleanSubNum === '4') {
-            inputField = `<input type="number" name="submenu-8.4" placeholder="น้ำหนักรวม (กก.)" min="0" step="0.01" />`;
-          } else if (cleanSubNum === '5') {
-            inputField = `<input type="text" name="submenu-8.5" placeholder="อุปกรณ์หรือยานพาหนะที่ใช้" />`;
-          } else if (cleanSubNum === '6') {
-            inputField = `<input type="text" name="submenu-8.6" placeholder="ข้อสังเกตที่ต้องบันทึก" />`;
-          }
-        } else if (activityId === '9' && cleanSubNum === '1') {
-          inputField = `
+            } else if (cleanSubNum === '4') {
+              inputField = `<input type="number" name="submenu-8.4" placeholder="น้ำหนักรวม (กก.)" min="0" step="0.01" />`;
+            } else if (cleanSubNum === '5') {
+              inputField = `<input type="text" name="submenu-8.5" placeholder="อุปกรณ์หรือยานพาหนะที่ใช้" />`;
+            } else if (cleanSubNum === '6') {
+              inputField = `
+              <div>
+                <label><input type="checkbox" name="submenu-8.6.cleaned" /> ผลไม้ได้รับการทำความสะอาดแล้ว</label><br/>
+                <label><input type="checkbox" name="submenu-8.6.packaged" /> ผลไม้ได้รับการบรรจุแล้ว</label>
+              </div>
+            `;
+            } else if (cleanSubNum === '7') {
+              inputField = `<input type="text" name="submenu-8.7" placeholder="ข้อสังเกตที่ต้องบันทึก" />`;
+            }
+          } else if (activityId === '9' && cleanSubNum === '1') {
+            inputField = `
             <select name="submenu-9.1" id="submenu-9.1" required>
               <option value="">-- เลือกวิธีฟื้นฟูต้นไม้ --</option>
               <option value="การตัดแต่งกิ่ง">PH01 - การตัดแต่งกิ่ง</option>
@@ -544,8 +567,8 @@ window.onload = () => {
               <option value="การกำจัดวัชพืช">PH06 - การกำจัดวัชพืช</option>
             </select>
           `;
-        } else if (activityId === '9' && cleanSubNum === '2') {
-          inputField = `
+          } else if (activityId === '9' && cleanSubNum === '2') {
+            inputField = `
             <div id="submenu-9-2-container">
               <div class="worker-select-row">
                 <select name="submenu-9.2" class="submenu-9-2-select">
@@ -556,8 +579,8 @@ window.onload = () => {
               <button type="button" class="add-worker-btn" data-activity-id="9">+ เพิ่มชื่อคนงาน</button>
             </div>
           `;
-        } else if (activityId === '9' && cleanSubNum === '3') {
-          inputField = `
+          } else if (activityId === '9' && cleanSubNum === '3') {
+            inputField = `
             <div style="margin-bottom: 6px;">
               <label>เวลาเริ่ม: <input type="time" id="start-9" /></label>
             </div>
@@ -570,13 +593,13 @@ window.onload = () => {
               </label>
             </div>
           `;
-        } else if (cleanSubNum === '4') {
-          inputField = `<input type="text" name="submenu-9.4" placeholder="อุปกรณ์หรือยานพาหนะที่ใช้" />`;
-        } else if (cleanSubNum === '5') {
-          inputField = `<input type="text" name="submenu-9.5" placeholder="ข้อสังเกตที่ต้องบันทึก" />`;
-        } else {
-          inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" />`;
-        }
+          } else if (cleanSubNum === '4') {
+            inputField = `<input type="text" name="submenu-9.4" placeholder="อุปกรณ์หรือยานพาหนะที่ใช้" />`;
+          } else if (cleanSubNum === '5') {
+            inputField = `<input type="text" name="submenu-9.5" placeholder="ข้อสังเกตที่ต้องบันทึก" />`;
+          } else {
+            inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" />`;
+          }
 
           return `
             <div class="submenu-item">
@@ -650,8 +673,8 @@ window.onload = () => {
           }
         }
 
-          if (activityId === '9') {
-            submenuContainer.innerHTML += `
+        if (activityId === '9') {
+          submenuContainer.innerHTML += `
               <div id="ph-extra-fields" style="display:none; margin-top:10px; padding-left:10px; border-left:2px solid #ccc;">
                 <div class="submenu-item">
                   <label>9.6 ชื่อสารเคมี
@@ -685,89 +708,89 @@ window.onload = () => {
               </div>
             `;
 
-            // Wait for dropdown to appear, then populate with formula IDs
-            const waitForElement = (id, callback, interval = 50, maxAttempts = 20) => {
-              let attempts = 0;
-              const timer = setInterval(() => {
-                const el = document.getElementById(id);
-                if (el || attempts >= maxAttempts) {
-                  clearInterval(timer);
-                  if (el) callback(el);
+          // Wait for dropdown to appear, then populate with formula IDs
+          const waitForElement = (id, callback, interval = 50, maxAttempts = 20) => {
+            let attempts = 0;
+            const timer = setInterval(() => {
+              const el = document.getElementById(id);
+              if (el || attempts >= maxAttempts) {
+                clearInterval(timer);
+                if (el) callback(el);
+              }
+              attempts++;
+            }, interval);
+          };
+
+          const loadChemicals = (select, type) => {
+            const urlMap = {
+              'PH04': '/api/formula-ids',
+              'PH05': '/api/pesticide-names',
+              'PH06': '/api/pesticide-names'
+            };
+            const url = urlMap[type];
+            if (!url) return;
+
+            fetch(url)
+              .then(res => res.json())
+              .then(data => {
+                let names = [];
+                if (type === 'PH04') {
+                  // /api/formula-ids returns { formula_ids: [...] }
+                  names = data.formula_ids || [];
+                } else {
+                  // /api/pesticide-names returns an array directly
+                  names = Array.isArray(data) ? data : [];
                 }
-                attempts++;
-              }, interval);
-            };
-
-            const loadChemicals = (select, type) => {
-              const urlMap = {
-                'PH04': '/api/formula-ids',
-                'PH05': '/api/pesticide-names',
-                'PH06': '/api/pesticide-names'
-              };
-              const url = urlMap[type];
-              if (!url) return;
-
-              fetch(url)
-                .then(res => res.json())
-                .then(data => {
-                  let names = [];
-                  if (type === 'PH04') {
-                    // /api/formula-ids returns { formula_ids: [...] }
-                    names = data.formula_ids || [];
-                  } else {
-                    // /api/pesticide-names returns an array directly
-                    names = Array.isArray(data) ? data : [];
-                  }
-                  select.innerHTML = '<option value="">-- เลือกรายการสารเคมี --</option>';
-                  names.forEach(name => {
-                    const option = document.createElement('option');
-                    option.value = name;
-                    option.textContent = name;
-                    select.appendChild(option);
-                  });
-                })
-                .catch(err => {
-                  console.error(`Failed to load ${type} names for submenu 9.6:`, err);
+                select.innerHTML = '<option value="">-- เลือกรายการสารเคมี --</option>';
+                names.forEach(name => {
+                  const option = document.createElement('option');
+                  option.value = name;
+                  option.textContent = name;
+                  select.appendChild(option);
                 });
-            };
+              })
+              .catch(err => {
+                console.error(`Failed to load ${type} names for submenu 9.6:`, err);
+              });
+          };
 
-            waitForElement('submenu-9-6', (select9_6) => {
-              const phSelect = submenuContainer.querySelector('[id="submenu-9.1"]');
-              const phextraFields = submenuContainer.querySelector('#ph-extra-fields');
+          waitForElement('submenu-9-6', (select9_6) => {
+            const phSelect = submenuContainer.querySelector('[id="submenu-9.1"]');
+            const phextraFields = submenuContainer.querySelector('#ph-extra-fields');
 
-              if (phSelect && phextraFields) {
-                const updateFieldsAndLoad = () => {
-                  const selectedText = phSelect.options[phSelect.selectedIndex]?.text?.toUpperCase() || '';
-                  const show = ['PH04', 'PH05', 'PH06'].some(code => selectedText.startsWith(code));
-                  phextraFields.style.display = show ? 'block' : 'none';
+            if (phSelect && phextraFields) {
+              const updateFieldsAndLoad = () => {
+                const selectedText = phSelect.options[phSelect.selectedIndex]?.text?.toUpperCase() || '';
+                const show = ['PH04', 'PH05', 'PH06'].some(code => selectedText.startsWith(code));
+                phextraFields.style.display = show ? 'block' : 'none';
 
-                  const toggleRequired = (selector, enable) => {
-                    phextraFields.querySelectorAll(selector).forEach(el => {
-                      if (enable) {
-                        el.setAttribute('required', 'required');
-                      } else {
-                        el.removeAttribute('required');
-                      }
-                    });
-                  };
-
-                  // If visible, make required; if hidden, remove required
-                  toggleRequired('select, input', show);
-
-                  if (selectedText.startsWith('PH04')) {
-                    loadChemicals(select9_6, 'PH04');
-                  } else if (selectedText.startsWith('PH05')) {
-                    loadChemicals(select9_6, 'PH05');
-                  } else if (selectedText.startsWith('PH06')) {
-                    loadChemicals(select9_6, 'PH06');
-                  }
+                const toggleRequired = (selector, enable) => {
+                  phextraFields.querySelectorAll(selector).forEach(el => {
+                    if (enable) {
+                      el.setAttribute('required', 'required');
+                    } else {
+                      el.removeAttribute('required');
+                    }
+                  });
                 };
 
-                phSelect.addEventListener('change', updateFieldsAndLoad);
-                updateFieldsAndLoad(); // initial
-              }
-            });
-          }
+                // If visible, make required; if hidden, remove required
+                toggleRequired('select, input', show);
+
+                if (selectedText.startsWith('PH04')) {
+                  loadChemicals(select9_6, 'PH04');
+                } else if (selectedText.startsWith('PH05')) {
+                  loadChemicals(select9_6, 'PH05');
+                } else if (selectedText.startsWith('PH06')) {
+                  loadChemicals(select9_6, 'PH06');
+                }
+              };
+
+              phSelect.addEventListener('change', updateFieldsAndLoad);
+              updateFieldsAndLoad(); // initial
+            }
+          });
+        }
 
         ['2', '4', '5', '6', '7', '8', '9'].forEach(id => {
           const container2 = submenuContainer.querySelector(`#submenu-${id}-2-container`);
@@ -815,32 +838,32 @@ window.onload = () => {
           if (id === '4') {
             durationInput = submenuContainer.querySelector(`input[name='submenu-4.4']`);
           } else {
-            durationInput = submenuContainer.querySelector(`input[name='submenu-${id}.1']`) || 
-                            submenuContainer.querySelector(`input[name='submenu-${id}.3']`);
+            durationInput = submenuContainer.querySelector(`input[name='submenu-${id}.1']`) ||
+              submenuContainer.querySelector(`input[name='submenu-${id}.3']`);
           }
-        if (startInput && endInput && durationInput) {
-          const calculateDuration = () => {
-            const start = startInput.value;
-            const end = endInput.value;
-            if (start && end) {
-              const startDate = new Date(`1970-01-01T${start}:00`);
-              const endDate = new Date(`1970-01-01T${end}:00`);
-              let diff = (endDate - startDate) / 60000;
-              if (diff < 0) diff += 24 * 60;
-              durationInput.value = diff.toString();
-            } else {
-              durationInput.value = '';
-            }
-          };
+          if (startInput && endInput && durationInput) {
+            const calculateDuration = () => {
+              const start = startInput.value;
+              const end = endInput.value;
+              if (start && end) {
+                const startDate = new Date(`1970-01-01T${start}:00`);
+                const endDate = new Date(`1970-01-01T${end}:00`);
+                let diff = (endDate - startDate) / 60000;
+                if (diff < 0) diff += 24 * 60;
+                durationInput.value = diff.toString();
+              } else {
+                durationInput.value = '';
+              }
+            };
 
-          startInput.addEventListener('input', calculateDuration);
-          startInput.addEventListener('change', calculateDuration);
-          endInput.addEventListener('input', calculateDuration);
-          endInput.addEventListener('change', calculateDuration);
+            startInput.addEventListener('input', calculateDuration);
+            startInput.addEventListener('change', calculateDuration);
+            endInput.addEventListener('input', calculateDuration);
+            endInput.addEventListener('change', calculateDuration);
 
-          calculateDuration();
-        }
-      });
+            calculateDuration();
+          }
+        });
       } catch (err) {
         console.error(`Failed to load submenus for Activity ID ${activityId}:`, err);
         submenuContainer.innerHTML = '<p>Error loading details.</p>';
