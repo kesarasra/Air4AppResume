@@ -34,6 +34,7 @@ LOG_SHEET = 'DailyLog'
 TREE_SHEET = 'CleanedSheet1'
 ACTIVITIES_SHEET = 'Activities'
 FORMULAIDS = 'FormuMetadata'
+EQUIP_SHEET = 'Equipment'
 
 # Admin/User credentials
 USERS = {
@@ -266,6 +267,37 @@ def get_pesticide_names():
     except Exception as e:
         print("❌ ERROR in /api/chemical-names:", str(e))
         return jsonify({'error': 'Failed to fetch chemical names', 'details': str(e)}), 500
+
+@app.route('/api/equipment', methods=['GET'])
+def get_equipment():
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        service = get_service()
+        sheet = service.spreadsheets()
+
+        # Fetch both columns A and E from Equipment sheet
+        result = sheet.values().get(
+            spreadsheetId=DAILY_LOGGER_ID,
+            range=f"{EQUIP_SHEET}!A2:E"  # A=Code, E=Thai name
+        ).execute()
+
+        values = result.get('values', [])
+        equipment_list = []
+
+        for row in values:
+            code = row[0].strip() if len(row) > 0 and row[0].strip() else None
+            th_name = row[4].strip() if len(row) > 4 and row[4].strip() else None
+
+            if code and th_name:
+                equipment_list.append(f"{code} - {th_name}")
+
+        return jsonify(equipment_list)
+
+    except Exception as e:
+        print("❌ ERROR in /api/equipment:", str(e))
+        return jsonify({'error': 'Failed to fetch equipment', 'details': str(e)}), 500
 
 
 @app.route('/api/submit', methods=['POST'])

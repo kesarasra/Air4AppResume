@@ -32,6 +32,16 @@ document.getElementById('activity-form').addEventListener('submit', e => {
     if (workerValues.length > 0) submenuAnswers[name] = workerValues.join(', ');
   });
 
+  // Collect equipment multi-selects
+  const equipmentKeys = ['submenu-2.7', 'submenu-4.3', 'submenu-8.5', 'submenu-9.4'];
+  equipmentKeys.forEach(key => {
+    const selects = Array.from(document.querySelectorAll(`select[name="${key}"]`));
+    const values = selects.map(s => (s.value || '').trim()).filter(Boolean);
+    if (values.length > 0) {
+      submenuAnswers[key] = values.join(', ');
+    }
+  });
+
   // Merge submenu-4.7.1 and submenu-4.7.2 into submenu-4.7
   const amount = submenuAnswers['submenu-4.7.1'] || '';
   const unit = submenuAnswers['submenu-4.7.2'] || '';
@@ -139,6 +149,118 @@ window.onload = () => {
       select.appendChild(option);
     });
   }
+
+  let cachedEquipmentList = null;
+
+  async function fetchEquipmentList() {
+    if (cachedEquipmentList) return cachedEquipmentList;
+    try {
+      const res = await fetch('/api/equipment');
+      if (!res.ok) throw new Error('Failed to load equipment');
+      const list = await res.json();
+      cachedEquipmentList = Array.isArray(list) ? list : [];
+      return cachedEquipmentList;
+    } catch (err) {
+      console.error('Error fetching equipment:', err);
+      cachedEquipmentList = [];
+      return cachedEquipmentList;
+    }
+  }
+
+  function populateEquipmentOptions(select) {
+    if (!select) return;
+    // remove all non-placeholder options (placeholder assumed to have value === '')
+    Array.from(select.querySelectorAll('option')).forEach(opt => {
+      if (opt.value !== '') opt.remove();
+    });
+    (cachedEquipmentList || []).forEach(item => {
+      const opt = document.createElement('option');
+      opt.value = item;
+      opt.textContent = item;
+      select.appendChild(opt);
+    });
+  }
+
+  function createEquipmentRow(submenuName) {
+    const row = document.createElement('div');
+    row.className = 'equipment-row';
+    row.innerHTML = `
+      <select name="${submenuName}" class="equipment-select">
+        <option value="">-- เลือกอุปกรณ์/ยานพาหนะ --</option>
+      </select>
+      <button type="button" class="remove-equipment-btn" title="ลบอุปกรณ์">X</button>
+    `;
+    return row;
+  }
+
+  /**
+   * Robust init using event delegation per equipment-container.
+   * - Populates existing selects
+   * - Uses a single delegated click handler per container (prevents duplicate handlers)
+   */
+  async function initEquipmentUI(submenuContainer) {
+    if (!submenuContainer) return;
+    const equipmentContainers = Array.from(submenuContainer.querySelectorAll('.equipment-container'));
+    if (!equipmentContainers.length) {
+      // no equipment UI in this submenu - nothing to do
+      // console.debug('initEquipmentUI: no containers found for', submenuContainer.id);
+      return;
+    }
+
+    // ensure equipment data is loaded
+    await fetchEquipmentList();
+
+    equipmentContainers.forEach(container => {
+      // populate any existing selects
+      container.querySelectorAll('select.equipment-select').forEach(select => populateEquipmentOptions(select));
+
+      // avoid attaching multiple delegated handlers
+      if (container.__equipmentDelegated) return;
+
+      container.addEventListener('click', (ev) => {
+        // ADD button (delegated)
+        const addBtn = ev.target.closest('.add-equipment-btn');
+        if (addBtn && container.contains(addBtn)) {
+          ev.preventDefault();
+          const submenuName = container.dataset.submenuName;
+          const newRow = createEquipmentRow(submenuName);
+
+          // attach remove handler for the newly created row's button (local handler)
+          newRow.querySelector('.remove-equipment-btn').addEventListener('click', e => {
+            e.preventDefault();
+            const rows = container.querySelectorAll('.equipment-row');
+            if (rows.length > 1) newRow.remove();
+            else newRow.querySelector('select.equipment-select').value = '';
+          });
+
+          // insert before the add button
+          container.insertBefore(newRow, addBtn);
+          // populate the new select
+          populateEquipmentOptions(newRow.querySelector('select.equipment-select'));
+          return;
+        }
+
+        // REMOVE button (delegated for rows that existed at init time)
+        const remBtn = ev.target.closest('.remove-equipment-btn');
+        if (remBtn && container.contains(remBtn)) {
+          ev.preventDefault();
+          const row = remBtn.closest('.equipment-row');
+          if (!row) return;
+          const rows = container.querySelectorAll('.equipment-row');
+          if (rows.length > 1) {
+            row.remove();
+          } else {
+            // only 1 row left -> clear
+            const sel = row.querySelector('select.equipment-select');
+            if (sel) sel.value = '';
+          }
+        }
+      });
+
+      container.__equipmentDelegated = true;
+    });
+  }
+
 
   fetch('/api/activities')
     .then(response => response.json())
@@ -313,7 +435,18 @@ window.onload = () => {
               </div>
             `;
           } else if (activityId === '2' && cleanSubNum === '7') {
-            inputField = `<input type="text" name="submenu-2.7" placeholder="เครื่องมือหรือยานพาหนะ" />`;
+            const submenuName = `submenu-${activityId}.${cleanSubNum}`;
+            inputField = `
+              <div class="equipment-container" data-submenu-name="${submenuName}">
+                <div class="equipment-row">
+                  <select name="${submenuName}" class="equipment-select">
+                    <option value="">-- เลือกอุปกรณ์/ยานพาหนะ --</option>
+                  </select>
+                  <button type="button" class="remove-equipment-btn" title="ลบอุปกรณ์">X</button>
+                </div>
+                <button type="button" class="add-equipment-btn" data-submenu="${submenuName}">+ เพิ่มอุปกรณ์อีกชิ้น</button>
+              </div>
+            `;
           } else if (activityId === '2' && cleanSubNum === '8') {
             inputField = `<input type="text" name="submenu-2.8" placeholder="บันทึกเพิ่มเติม" />
             `;
@@ -389,7 +522,18 @@ window.onload = () => {
               </div>
             `;
           } else if (activityId === '4' && cleanSubNum === '3') {
-            inputField = `<input type="text" name="submenu-4.3" required/>`;
+            const submenuName = `submenu-${activityId}.${cleanSubNum}`;
+            inputField = `
+              <div class="equipment-container" data-submenu-name="${submenuName}">
+                <div class="equipment-row">
+                  <select name="${submenuName}" class="equipment-select">
+                    <option value="">-- เลือกอุปกรณ์/ยานพาหนะ --</option>
+                  </select>
+                  <button type="button" class="remove-equipment-btn" title="ลบอุปกรณ์">X</button>
+                </div>
+                <button type="button" class="add-equipment-btn" data-submenu="${submenuName}">+ เพิ่มอุปกรณ์อีกชิ้น</button>
+              </div>
+            `;
           } else if (activityId === '4' && cleanSubNum === '4') {
             inputField = `
               <div style="margin-bottom: 6px;">
@@ -544,7 +688,18 @@ window.onload = () => {
             } else if (cleanSubNum === '4') {
               inputField = `<input type="number" name="submenu-8.4" placeholder="น้ำหนักรวม (กก.)" min="0" step="0.01" />`;
             } else if (cleanSubNum === '5') {
-              inputField = `<input type="text" name="submenu-8.5" placeholder="อุปกรณ์หรือยานพาหนะที่ใช้" />`;
+              const submenuName = `submenu-${activityId}.${cleanSubNum}`;
+              inputField = `
+                <div class="equipment-container" data-submenu-name="${submenuName}">
+                  <div class="equipment-row">
+                    <select name="${submenuName}" class="equipment-select">
+                      <option value="">-- เลือกอุปกรณ์/ยานพาหนะ --</option>
+                    </select>
+                    <button type="button" class="remove-equipment-btn" title="ลบอุปกรณ์">X</button>
+                  </div>
+                  <button type="button" class="add-equipment-btn" data-submenu="${submenuName}">+ เพิ่มอุปกรณ์อีกชิ้น</button>
+                </div>
+              `;
             } else if (cleanSubNum === '6') {
               inputField = `
               <div>
@@ -593,9 +748,20 @@ window.onload = () => {
               </label>
             </div>
           `;
-          } else if (cleanSubNum === '4') {
-            inputField = `<input type="text" name="submenu-9.4" placeholder="อุปกรณ์หรือยานพาหนะที่ใช้" />`;
-          } else if (cleanSubNum === '5') {
+          } else if (activityId === '9' && cleanSubNum === '4') {
+            const submenuName = `submenu-${activityId}.${cleanSubNum}`;
+              inputField = `
+                <div class="equipment-container" data-submenu-name="${submenuName}">
+                  <div class="equipment-row">
+                    <select name="${submenuName}" class="equipment-select">
+                      <option value="">-- เลือกอุปกรณ์/ยานพาหนะ --</option>
+                    </select>
+                    <button type="button" class="remove-equipment-btn" title="ลบอุปกรณ์">X</button>
+                  </div>
+                  <button type="button" class="add-equipment-btn" data-submenu="${submenuName}">+ เพิ่มอุปกรณ์อีกชิ้น</button>
+                </div>
+              `;
+          } else if (activityId === '9' && cleanSubNum === '5') {
             inputField = `<input type="text" name="submenu-9.5" placeholder="ข้อสังเกตที่ต้องบันทึก" />`;
           } else {
             inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" />`;
@@ -871,6 +1037,7 @@ window.onload = () => {
     } else {
       submenuContainer.innerHTML = '';
     }
+    await initEquipmentUI(submenuContainer);
     disableWorkerSelectRequired();
   });
 };
