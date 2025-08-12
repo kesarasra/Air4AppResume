@@ -9,11 +9,11 @@
 }
 
 body {
-  background-color: #D36F3F;
+  background-color: #9BBAA2;
   font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
-  color: #333;
+  color: #8a4627;
 }
 
 .container {
@@ -178,7 +178,7 @@ input[type="checkbox"][name="activity"] {
 .navbar {
   position: sticky;
   top: 0;
-  background-color: #333;
+  background-color: #64455d;
   color: white;
   padding:4px 20px;
   z-index: 1000;
