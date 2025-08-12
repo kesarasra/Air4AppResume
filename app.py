@@ -436,30 +436,58 @@ def submit_log():
         ).execute()
 
     gardencare_rows = []
+
+    # Prepare placeholders for submenu answers with empty defaults
+    gardencare_4_submenus = [''] * 8
+    gardencare_10_submenus = [''] * 10
+
+    # Collect submenu data from activities
     for activity in activities:
-            if activity.get('id') == '4':
-                gc_row = [
-                    log_id,
-                    date,                                         # A: Date
-                    worker,                                       # B: Worker Name
-                    submenus.get('submenu-4.2', ''),              # C: Other Workers (number or names)
-                    submenus.get('submenu-4.1', ''),              # D: Activity (GC01, GC02, etc)
-                    submenus.get('submenu-4.3', ''),              # E: Equipment
-                    submenus.get('submenu-4.4', ''),              # F: Duration (minutes)
-                    submenus.get('submenu-4.5', ''),              # G: Notes
-                    submenus.get('submenu-4.6', ''),              # H: Chemical Name
-                    submenus.get('submenu-4.7', ''),              # I: Amount Used
-                    submenus.get('submenu-4.8', '')               # J: Tank Size
-                ]
-                gardencare_rows.append(gc_row)
+        if activity.get('id') == '4':
+            gardencare_4_submenus = [
+                submenus.get('submenu-4.2', ''),   # C: Other Workers
+                submenus.get('submenu-4.1', ''),   # D: Activity code
+                submenus.get('submenu-4.3', ''),   # E: Equipment
+                submenus.get('submenu-4.4', ''),   # F: Duration
+                submenus.get('submenu-4.5', ''),   # G: Notes
+                submenus.get('submenu-4.6', ''),   # H: Chemical Name
+                submenus.get('submenu-4.7', ''),   # I: Amount Used
+                submenus.get('submenu-4.8', ''),   # J: Tank Size
+            ]
+        elif activity.get('id') == '10':
+            gardencare_10_submenus = [
+                submenus.get('submenu-10.1', ''),  # Detail of Test Site (L)
+                submenus.get('submenu-10.2', ''),  # Value #1 (M)
+                submenus.get('submenu-10.3', ''),  # Value #2 (N)
+                submenus.get('submenu-10.4', ''),  # Value #3 (O)
+                submenus.get('submenu-10.5', ''),  # Value #4 (P)
+                submenus.get('submenu-10.6', ''),  # Value #5 (Q)
+                submenus.get('submenu-10.7', ''),  # Value #6 (R)
+                submenus.get('submenu-10.8', ''),  # Value #7 (S)
+                submenus.get('submenu-10.9', ''),  # Value #8 (T)
+                submenus.get('submenu-10.10', ''), # Notes (U)
+            ]
+
+    # Only write if activity 4 or 10 was selected (any submenu field filled)
+    if any(cell.strip() for cell in gardencare_4_submenus) or any(cell.strip() for cell in gardencare_10_submenus):
+
+        # Build one full row with all columns A-U (21 columns)
+        row = [
+            log_id,  # A
+            date,    # B
+            worker,  # C
+        ] + gardencare_4_submenus + gardencare_10_submenus
+
+        gardencare_rows.append(row)
 
     if gardencare_rows:
-            sheet_service.values().append(
-                spreadsheetId=DAILY_LOGGER_ID,
-                range="GardenCare!A1",
-                valueInputOption="RAW",
-                body={"values": gardencare_rows}
-            ).execute()
+        sheet_service.values().append(
+            spreadsheetId=DAILY_LOGGER_ID,
+            range="GardenCare!A1",
+            valueInputOption="RAW",
+            body={"values": gardencare_rows}
+        ).execute()
+
 
     fruitflowercare_rows = []
 
@@ -580,7 +608,7 @@ def admin_view_log():
             }
         },
         'GardenCare': {
-            'range': 'GardenCare!A1:K',  # adjust range as needed
+            'range': 'GardenCare!A1:U',  # adjust range as needed
             'column_map': {
                 'Log ID': 0,
                 'Date': 1,
@@ -592,7 +620,17 @@ def admin_view_log():
                 'Notes': 7,
                 'Chemical Name': 8,
                 'Amount Used': 9,
-                'Tank Size': 10
+                'Tank Size': 10,
+                'Detail of Test Site': 11,
+                'Value #1': 12,
+                'Value #2': 13,
+                'Value #3': 14,
+                'Value #4': 15,
+                'Value #5': 16,
+                'Value #6': 17,
+                'Value #7': 18,
+                'Value #8': 19,
+                'Notes': 20
             }
         },
         'Fruit/FlowerCare': {
@@ -786,6 +824,62 @@ def save_formula():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/save-soil-test', methods=['POST'])
+def save_soil_test():
+    # Optionally require authentication like other APIs
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+
+    test_site = data.get('testSiteDetail', '').strip()
+    values = data.get('values')  # expected list length up to 8 (can be fewer)
+    notes = data.get('notes', '').strip()
+
+    # Basic validation
+    if not test_site:
+        return jsonify({'error': 'testSiteDetail is required'}), 400
+    if not isinstance(values, list) or len(values) == 0:
+        return jsonify({'error': 'values must be a list with at least one entry'}), 400
+
+    # Ensure at least one non-empty numeric value
+    has_value = any(v is not None and str(v).strip() != '' for v in values)
+    if not has_value:
+        return jsonify({'error': 'At least one Value field must be provided'}), 400
+
+    # Normalize values to exactly 8 columns (pad with empty strings)
+    normalized_values = []
+    for i in range(8):
+        if i < len(values):
+            v = values[i]
+            # allow numeric strings or numbers. If empty or null -> ''
+            if v is None or (isinstance(v, str) and v.strip() == ''):
+                normalized_values.append('')
+            else:
+                normalized_values.append(v)
+        else:
+            normalized_values.append('')
+
+    # Build the row in the order L -> U (Detail, V1..V8, Notes)
+    row = [test_site] + normalized_values + [notes]
+
+    try:
+        # Append to GardenCare sheet in your DAILY_LOGGER_ID spreadsheet
+        sheet.values().append(
+            spreadsheetId=DAILY_LOGGER_ID,
+            range='GardenCare!L:U',  # columns L..U inclusive
+            valueInputOption='USER_ENTERED',
+            insertDataOption='INSERT_ROWS',
+            body={'values': [row]}
+        ).execute()
+
+        return jsonify({'status': 'success'}), 200
+
+    except Exception as e:
+        # keep the real error for logs, but return a friendly message
+        app.logger.exception("Failed to save soil test")
+        return jsonify({'error': 'Failed to save soil test', 'details': str(e)}), 500
 
 
 if __name__ == '__main__':

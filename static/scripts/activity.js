@@ -763,6 +763,47 @@ window.onload = () => {
               `;
           } else if (activityId === '9' && cleanSubNum === '5') {
             inputField = `<input type="text" name="submenu-9.5" placeholder="ข้อสังเกตที่ต้องบันทึก" />`;
+          // Soil & Water Testing (Activity 10)
+          }  else if (activityId === '10' && cleanSubNum === '1') {
+              // 10.1 รายละเอียดจุดทดสอบ (required text)
+              inputField = `<input type="text" name="submenu-10.1" placeholder="รายละเอียดจุดทดสอบ" required />`;
+
+            } else if (activityId === '10' && cleanSubNum === '2') {
+              // 10.2 ค่า #1 (required numeric)
+              inputField = `<input type="number" step="any" name="submenu-10.2" placeholder="ค่า #1" required />`;
+
+            } else if (activityId === '10' && cleanSubNum === '3') {
+              // 10.3 ค่า #2 (optional numeric)
+              inputField = `<input type="number" step="any" name="submenu-10.3" placeholder="ค่า #2" />`;
+
+            } else if (activityId === '10' && cleanSubNum === '4') {
+              // 10.4 ค่า #3 (optional numeric)
+              inputField = `<input type="number" step="any" name="submenu-10.4" placeholder="ค่า #3" />`;
+
+            } else if (activityId === '10' && cleanSubNum === '5') {
+              // 10.5 ค่า #4 (optional numeric)
+              inputField = `<input type="number" step="any" name="submenu-10.5" placeholder="ค่า #4" />`;
+
+            } else if (activityId === '10' && cleanSubNum === '6') {
+              // 10.6 ค่า #5 (optional numeric)
+              inputField = `<input type="number" step="any" name="submenu-10.6" placeholder="ค่า #5" />`;
+
+            } else if (activityId === '10' && cleanSubNum === '7') {
+              // 10.7 ค่า #6 (optional numeric)
+              inputField = `<input type="number" step="any" name="submenu-10.7" placeholder="ค่า #6" />`;
+
+            } else if (activityId === '10' && cleanSubNum === '8') {
+              // 10.8 ค่า #7 (optional numeric)
+              inputField = `<input type="number" step="any" name="submenu-10.8" placeholder="ค่า #7" />`;
+
+            } else if (activityId === '10' && cleanSubNum === '9') {
+              // 10.9 ค่า #8 (optional numeric)
+              inputField = `<input type="number" step="any" name="submenu-10.9" placeholder="ค่า #8" />`;
+
+            } else if (activityId === '10' && cleanSubNum === '10') {
+              // 10.10 ข้อสังเกตุที่ต้องบันทึก (optional text area)
+              inputField = `<input type="text" name="submenu-10.10" placeholder="ข้อสังเกตที่ต้องบันทึก" />`;
+
           } else {
             inputField = `<input type="text" name="submenu-${activityId}.${cleanSubNum}" />`;
           }
