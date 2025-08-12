@@ -34,6 +34,7 @@ LOG_SHEET = 'DailyLog'
 TREE_SHEET = 'CleanedSheet1'
 ACTIVITIES_SHEET = 'Activities'
 FORMULAIDS = 'FormuMetadata'
+FORMULATIONS = "Formulations"
 EQUIP_SHEET = 'Equipment'
 
 # Admin/User credentials
@@ -686,6 +687,79 @@ def admin_view_log():
         sheet_name=sheet_name,
         header_colors=bg_colors  
     )
+
+@app.route('/api/save-formula', methods=['POST'])
+def save_formula():
+    data = request.get_json()
+
+    # Basic validation
+    formula_id = data.get('formulaId')
+    one_time_use = data.get('oneTimeUse')
+    chemicals = data.get('chemicals')
+    water_volume = data.get('waterVolume')
+
+    if not formula_id or one_time_use not in ['Y', 'N'] or not chemicals or not isinstance(chemicals, list):
+        return jsonify({'error': 'Invalid data submitted'}), 400
+
+    try:
+
+        # Append rows to Formulations sheet
+        rows_to_append = []
+        for chem in chemicals:
+            thai_name = chem.get('thaiName')
+            amount = chem.get('amount')
+            unit = chem.get('unit')
+            if not thai_name or amount is None or not unit:
+                return jsonify({'error': 'Missing chemical details'}), 400
+
+            row = [
+                formula_id, '', thai_name, amount, unit, '', '', water_volume if water_volume is not None else ''
+            ]
+            rows_to_append.append(row)
+
+        # Append to Formulations
+        sheet.values().append(
+            spreadsheetId=CHEMICALS_SHEET_ID,
+            range='Formulations!A:H',
+            valueInputOption='USER_ENTERED',
+            insertDataOption='INSERT_ROWS',
+            body={'values': rows_to_append}
+        ).execute()
+
+        # Read existing metadata
+        result = sheet.values().get(
+            spreadsheetId=CHEMICALS_SHEET_ID,
+            range='FormuMetadata!A:E'
+        ).execute()
+
+        metadata_records = result.get('values', [])
+        formula_ids = [row[0] for row in metadata_records[1:]] if len(metadata_records) > 1 else []
+
+        if formula_id in formula_ids:
+            index = formula_ids.index(formula_id)
+            # Update One-Time-Use flag (col E)
+            range_to_update = f'FormuMetadata!E{index + 2}'
+            sheet.values().update(
+                spreadsheetId=CHEMICALS_SHEET_ID,
+                range=range_to_update,
+                valueInputOption='USER_ENTERED',
+                body={'values': [[one_time_use]]}
+            ).execute()
+        else:
+            # Append new metadata row
+            new_metadata_row = [formula_id, '', '', '', one_time_use]
+            sheet.values().append(
+                spreadsheetId=CHEMICALS_SHEET_ID,
+                range='FormuMetadata!A:E',
+                valueInputOption='USER_ENTERED',
+                insertDataOption='INSERT_ROWS',
+                body={'values': [new_metadata_row]}
+            ).execute()
+
+        return jsonify({'status': 'success', 'formulaId': formula_id})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

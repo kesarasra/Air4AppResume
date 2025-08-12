@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create New Items</title>
+  <link rel="stylesheet" href="styles/style.css" />
+</head>
+<body>
+  <header class="navbar">
+    <h1>เครื่องบันทึกรายวัน</h1>
+    <div>
+      <button onclick="window.location.href='/'">บ้าน</button>
+      <button onclick="window.location.href='/admin/view-log'">ดูแผ่นงาน</button>
+      <button onclick="window.location.href='/logout'">ออกจากระบบ</button>
+    </div>
+  </header>
+  <main class="container">
+    <h1>Create New Items</h1>
+    <div class="btn-group" id="item-type-buttons">
+      <button id="btn-chemical-formulas" type="button">Chemical Formulas</button>
+      <button id="btn-worker-names" type="button">Worker Names</button>
+      <button id="btn-equipment" type="button">Equipment</button>
+    </div>
+
+    <section id="item-form-container" style="margin-top: 20px;">
+      <!-- Dynamic form will load here based on selection -->
+    </section>
+  </main>
+
+  <script src="scripts/utils.js"></script>
+  <script src="scripts/newitem.js"></script>
+</body>
+</html>
