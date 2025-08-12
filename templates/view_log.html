@@ -4,27 +4,43 @@
     <title>View Log</title>
     <link rel="stylesheet" href="/static/styles/style.css">
     <style>
+        .table-container {
+            overflow-x: auto;
+            max-width: 100%;
+            margin-top: 20px;
+            max-height: 70vh; /* limit height so vertical scroll works */
+            overflow-y: auto; /* enable vertical scroll */
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
             color: white;
         }
+
+        /* Make headers sticky for both directions */
+        .table-container table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background-color: #333; /* ensure it's opaque over content */
+            border-bottom: 2px solid #ccc;
+        }
+
         th, td {
             padding: 8px 12px;
             border: 1px solid #ccc;
             font-family: Arial, sans-serif;
         }
-        th {
-            background-color: #333;
-            cursor: pointer;
-        }
+
         td {
             background-color: #222;
         }
+
         th:hover {
             background-color: #444;
         }
+
         .button {
             padding: 8px 16px;
             margin-right: 10px;
@@ -33,12 +49,15 @@
             text-decoration: none;
             border-radius: 4px;
         }
+
         .button:hover {
             background-color: #45a049;
         }
+
         .button.active {
             background-color: #555;
         }
+
         .sheet-buttons {
             margin-top: 20px; 
             margin-bottom: 30px;
@@ -68,30 +87,33 @@
         <h2>กำลังดูบันทึก: {{ sheet_name | default("DailyLog") }}</h2>
 
         {% if headers and rows %}
-            <table data-sort-dir="">
-                <thead>
-                    <tr>
-                        {% for col in headers %}
-                            <th onclick="sortTable({{ loop.index0 }})"
-                                style="background-color: {{ header_colors[loop.index0] }}; color: white;">
-                                {{ col }}
-                            </th>
-                        {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in rows %}
+            <div class="table-container">
+                <table data-sort-dir="">
+                    <thead>
                         <tr>
-                            {% for cell in row %}
-                                <td>{{ cell }}</td>
+                            {% for col in headers %}
+                                <th onclick="sortTable({{ loop.index0 }})"
+                                    style="background-color: {{ header_colors[loop.index0] }}; color: white;">
+                                    {{ col }}
+                                </th>
                             {% endfor %}
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            <tr>
+                                {% for cell in row %}
+                                    <td>{{ cell }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% else %}
             <p>No data found in the sheet.</p>
         {% endif %}
+
     </main>
 
     <script>
