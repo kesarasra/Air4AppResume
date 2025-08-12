@@ -62,6 +62,11 @@ def home():
         return redirect(url_for('login'))
     return render_template('index.html', username=session['username'], USERS=USERS)
 
+@app.route('/newitem')
+def newitem_page():
+    return render_template('newitem.html')
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -246,6 +251,27 @@ def get_formula_ids():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/fertilizer-names', methods=['GET'])
+def get_fertilizer_names():
+    if 'username' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        service = get_service()
+        sheet = service.spreadsheets()
+
+        result = sheet.values().get(
+            spreadsheetId=CHEMICALS_SHEET_ID,
+            range='Fertilizers!B2:B'  # Assuming Thai chemical names are in Col B, starting row 2
+        ).execute()
+
+        values = result.get('values', [])
+        names = [row[0].strip() for row in values if row and row[0].strip()]
+        return jsonify(names)
+
+    except Exception as e:
+        print(f"❌ ERROR in /api/fertilizer-names: {str(e)}")
+        return jsonify({'error': 'Failed to fetch fertilizer names', 'details': str(e)}), 500
 
 @app.route('/api/pesticide-names', methods=['GET'])
 def get_pesticide_names():
