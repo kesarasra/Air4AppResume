@@ -26,7 +26,7 @@ body {
 }
 
 h1 {
-  color: #E2725B;
+  color: #c5452b;
 }
 
 h2 {
@@ -178,7 +178,7 @@ input[type="checkbox"][name="activity"] {
 .navbar {
   position: sticky;
   top: 0;
-  background-color: #64455d;
+  background-color: #e69fd5;
   color: white;
   padding:4px 20px;
   z-index: 1000;
@@ -186,6 +186,11 @@ input[type="checkbox"][name="activity"] {
   justify-content: space-between;
   align-items: center;
   font-family: Arial, sans-serif;
+}
+
+.navbar .site-logo {
+    height: 70px; /* adjust size */
+    margin-left: 25px;
 }
 
 .navbar button {
