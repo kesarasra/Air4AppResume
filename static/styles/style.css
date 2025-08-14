@@ -189,8 +189,8 @@ input[type="checkbox"][name="activity"] {
 }
 
 .navbar .site-logo {
-    height: 70px; /* adjust size */
-    margin-left: 25px;
+    height: 80px; /* adjust size */
+    margin-left: 15px;
 }
 
 .navbar button {

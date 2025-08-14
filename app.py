@@ -588,7 +588,7 @@ def admin_view_log():
             }
         },
         'TreeCare': {
-            'range': 'TreeCare!A1:W',
+            'range': 'TreeCare!A1:Y',
             'column_map': {
                 'Log ID': 0,
                 'Date': 1,

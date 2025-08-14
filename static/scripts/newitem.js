@@ -127,6 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
         <select name="unit" required>
           <option value="kg">kg</option>
           <option value="L">L</option>
+          <option value="Bottle">ขวด</option>
+          <option value="Bag">ถุง</option>
+          <option value="Tablet">เม็ด</option>
         </select>
         <button type="button" class="remove-chemical-btn" title="Remove Chemical">&times;</button>
       `;
