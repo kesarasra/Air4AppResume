@@ -430,7 +430,7 @@ def submit_log():
     if treecare_rows:
         sheet_service.values().append(
             spreadsheetId=DAILY_LOGGER_ID,
-            range="TreeCare!A1",
+            range="TreeCare!A2:Y",
             valueInputOption="RAW",
             body={"values": treecare_rows}
         ).execute()
@@ -451,8 +451,9 @@ def submit_log():
                 submenus.get('submenu-4.4', ''),   # F: Duration
                 submenus.get('submenu-4.5', ''),   # G: Notes
                 submenus.get('submenu-4.6', ''),   # H: Chemical Name
-                submenus.get('submenu-4.7', ''),   # I: Amount Used
-                submenus.get('submenu-4.8', ''),   # J: Tank Size
+                submenus.get('submenu-4.7.1', ''), # I: Amount Used
+                submenus.get('submenu-4.7.2', ''), # J: Unit Type
+                submenus.get('submenu-4.8', ''),   # K: Tank Size
             ]
         elif activity.get('id') == '10':
             gardencare_10_submenus = [
@@ -483,7 +484,7 @@ def submit_log():
     if gardencare_rows:
         sheet_service.values().append(
             spreadsheetId=DAILY_LOGGER_ID,
-            range="GardenCare!A1",
+            range="GardenCare!A2:V",
             valueInputOption="RAW",
             body={"values": gardencare_rows}
         ).execute()
@@ -531,7 +532,8 @@ def submit_log():
                 submenus.get('submenu-9.4', ''),
                 submenus.get('submenu-9.5', ''),
                 submenus.get('submenu-9.6', ''),
-                submenus.get('submenu-9.7', ''),
+                submenus.get('submenu-9.7.1', ''),
+                submenus.get('submenu-9.7.2', ''),
                 submenus.get('submenu-9.8', '')
             ]
 
@@ -547,7 +549,7 @@ def submit_log():
 
         sheet_service.values().append(
             spreadsheetId=DAILY_LOGGER_ID,
-            range="'Fruit/FlowerCare'!A1",
+            range="'Fruit/FlowerCare'!A2:AA",
             valueInputOption="RAW",
             body={"values": fruitflowercare_rows}
         ).execute()
@@ -608,7 +610,7 @@ def admin_view_log():
             }
         },
         'GardenCare': {
-            'range': 'GardenCare!A1:U',  # adjust range as needed
+            'range': 'GardenCare!A1:V',  # adjust range as needed
             'column_map': {
                 'Log ID': 0,
                 'Date': 1,
@@ -620,21 +622,22 @@ def admin_view_log():
                 'Notes': 7,
                 'Chemical Name': 8,
                 'Amount Used': 9,
-                'Tank Size': 10,
-                'Detail of Test Site': 11,
-                'Value #1': 12,
-                'Value #2': 13,
-                'Value #3': 14,
-                'Value #4': 15,
-                'Value #5': 16,
-                'Value #6': 17,
-                'Value #7': 18,
-                'Value #8': 19,
-                'Notes': 20
+                'Unit Type': 10,
+                'Tank Size': 11,
+                'Detail of Test Site': 12,
+                'Value #1': 13,
+                'Value #2': 14,
+                'Value #3': 15,
+                'Value #4': 16,
+                'Value #5': 17,
+                'Value #6': 18,
+                'Value #7': 19,
+                'Value #8': 20,
+                'Notes': 21
             }
         },
         'Fruit/FlowerCare': {
-            'range': 'Fruit/FlowerCare!A1:W',  # Adjust column range if you have more columns
+            'range': 'Fruit/FlowerCare!A1:AA',  # Adjust column range if you have more columns
             'column_map': {
                 'LogID': 0,
                 'Date': 1,
@@ -660,7 +663,8 @@ def admin_view_log():
                 'Notes (Post-Harvest)': 21,
                 'Chemical Name': 22,
                 'Amount Used': 23,
-                'Tank Size': 24
+                'Unit Type': 24,
+                'Tank Size': 25
             }
         }
     }

@@ -85,14 +85,17 @@ window.onload = async () => {
       const grouped = {};
 
       matchingKeys.forEach(key => {
-        const subNum = key.replace(prefix, ''); // e.g., "7.1" or "7"
-        const [main, sub] = subNum.split('.'); // main = "7", sub = "1"
-
-        if (sub) {
-          if (!grouped[main]) grouped[main] = {};
-          grouped[main][sub] = submenus[key];
-        } else {
+        const subNum = key.replace(prefix, ''); // e.g., "4.7.1"
+        
+        // If this is a two-part field (amount + unit), keep them tied together by full subNum
+        if (!grouped[subNum]) {
           grouped[subNum] = submenus[key];
+        } else {
+          // If the same subNum is hit twice, convert to object for amount/unit
+          if (typeof grouped[subNum] !== 'object') {
+            grouped[subNum] = { '1': grouped[subNum] };
+          }
+          grouped[subNum]['2'] = submenus[key];
         }
       });
 

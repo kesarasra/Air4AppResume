@@ -42,17 +42,6 @@ document.getElementById('activity-form').addEventListener('submit', e => {
     }
   });
 
-  // Merge submenu-4.7.1 and submenu-4.7.2 into submenu-4.7
-  const amount = submenuAnswers['submenu-4.7.1'] || '';
-  const unit = submenuAnswers['submenu-4.7.2'] || '';
-
-  if (amount || unit) {
-    submenuAnswers['submenu-4.7'] = `${amount} ${unit}`.trim();
-  }
-
-  delete submenuAnswers['submenu-4.7.1'];
-  delete submenuAnswers['submenu-4.7.2'];
-
   // Handle submenu 8.6 checkboxes separately
   const cleanedCheckbox = document.querySelector('input[name="submenu-8.6.cleaned"]');
   const packagedCheckbox = document.querySelector('input[name="submenu-8.6.packaged"]');
@@ -67,17 +56,6 @@ document.getElementById('activity-form').addEventListener('submit', e => {
   if (cleanedPackagedValues.length > 0) {
     submenuAnswers['submenu-8.6'] = cleanedPackagedValues.join(', ');
   }
-
-  // Merge submenu-9.7.1 and submenu-9.7.2 into submenu-9.7
-  const amount97 = submenuAnswers['submenu-9.7.1'] || '';
-  const unit97 = submenuAnswers['submenu-9.7.2'] || '';
-
-  if (amount97 || unit97) {
-    submenuAnswers['submenu-9.7'] = `${amount97} ${unit97}`.trim();
-  }
-
-  delete submenuAnswers['submenu-9.7.1'];
-  delete submenuAnswers['submenu-9.7.2'];
 
   console.log('Collected submenu answers:', submenuAnswers);
   // Now save the cleaned submenuAnswers object
@@ -848,7 +826,7 @@ window.onload = () => {
                 </label>
               </div>
               <div class="submenu-item">
-                <label>4.8 ขนาดถัง:
+                <label>4.8 พื้นที่ของต้นไม้ที่เน้น:
                   <select name="submenu-4.8" required>
                       <option value="">-- เลือกบริเวณของต้นไม้ --</option>
                       <option value="ใบ">ใบ</option>
