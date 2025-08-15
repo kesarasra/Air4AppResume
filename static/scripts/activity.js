@@ -431,6 +431,9 @@ window.onload = () => {
                   <option value="">หน่วย</option>
                   <option value="kg">kg</option>
                   <option value="L">L</option>
+                  <option value="Bottle">ขวด</option>
+                  <option value="Bag">ถุง</option>
+                  <option value="Tablet">เม็ด</option>
                 </select>
               </div>
             `;
@@ -837,6 +840,9 @@ window.onload = () => {
                       <option value="">หน่วย</option>
                       <option value="kg">kg</option>
                       <option value="L">L</option>
+                      <option value="Bottle">ขวด</option>
+                      <option value="Bag">ถุง</option>
+                      <option value="Tablet">เม็ด</option>
                     </select>
                   </div>
                 </label>
@@ -898,6 +904,9 @@ window.onload = () => {
                       <option value="">หน่วย</option>
                       <option value="kg">kg</option>
                       <option value="L">L</option>
+                      <option value="Bottle">ขวด</option>
+                      <option value="Bag">ถุง</option>
+                      <option value="Tablet">เม็ด</option>
                     </select>
                   </div>
                 </div>
