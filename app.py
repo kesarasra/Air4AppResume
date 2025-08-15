@@ -236,18 +236,18 @@ def get_submenus(activity_id):
 
     return jsonify(submenus)
 
-@app.route("/api/formula-ids")
-def get_formula_ids():
+@app.route("/api/formulas")
+def get_formulas():
     try:
         result = sheet.values().get(
             spreadsheetId=CHEMICALS_SHEET_ID,
-            range=f"{FORMULAIDS}!A2:A",  # Skip header, get only Formula IDs
+            range=f"{FORMULAIDS}!A2:A"  
         ).execute()
 
         values = result.get("values", [])
-        formula_ids = [row[0] for row in values if row]
+        formulas = [ {"id": row[0]} for row in values if row ]
 
-        return jsonify({"formula_ids": formula_ids})
+        return jsonify({"formulas": formulas})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

@@ -74,24 +74,27 @@ document.getElementById('activity-form').addEventListener('submit', e => {
   window.location.href = 'confirm.html';
 });
 
-async function loadPesticideNamesFor46() {
+async function populateFormulaDropdowns() {
   try {
-    const response = await fetch('/api/pesticide-names');
-    if (!response.ok) throw new Error('Failed to fetch chemical names');
+    const res = await fetch('/api/formulas');
+    if (!res.ok) throw new Error('Failed to fetch formulas');
+    const data = await res.json();
+    const formulas = data.formulas || [];
 
-    const names = await response.json();
-    const select = document.querySelector('[name="submenu-4.6"]');
-
-    select.innerHTML = '<option value="">-- โปรดเลือก --</option>';
-
-    names.forEach(name => {
-      const option = document.createElement('option');
-      option.value = name;
-      option.textContent = name;
-      select.appendChild(option);
+    // Select all dropdowns that should use formulas
+    const formulaDropdowns = document.querySelectorAll('select[data-formula-dropdown]');
+    formulaDropdowns.forEach(select => {
+      select.innerHTML = '<option value="">-- เลือกสูตร --</option>'; // default
+      formulas.forEach(f => {
+        const option = document.createElement('option');
+        option.value = f.id;
+        option.textContent = f.name;
+        option.title = f.description; // optional tooltip
+        select.appendChild(option);
+      });
     });
-  } catch (error) {
-    console.error('Error loading chemical names:', error);
+  } catch (err) {
+    console.error('Error fetching formulas:', err);
   }
 }
 
@@ -558,7 +561,6 @@ window.onload = () => {
               <input type="text" name="submenu-5.4" />
             `;
           } else if (activityId === '6') {
-            // submenu-9.1: dropdown for pollination methods
             if (cleanSubNum === '1') {
               const methods = ['ผสมเกสรด้วยมือ', 'ฉีดพ่นแบบแห้ง', 'ฉีดพ่นแบบเปียก'];
               inputField = `<select name="submenu-6.1" required>
@@ -807,7 +809,7 @@ window.onload = () => {
             <div id="gc07-extra-fields" style="display:none; margin-top:10px; padding-left:10px; border-left:2px solid #ccc;">
               <div class="submenu-item">
                 <label>4.6 ชื่อสารเคมี:
-                  <select name="submenu-4.6"></select>
+                  <select name="submenu-4.6" data-formula-dropdown></select>
                 </label>
               </div>
               <div class="submenu-item">
@@ -864,45 +866,68 @@ window.onload = () => {
           }
         }
 
+
         if (activityId === '9') {
+          // Append extra fields (hidden by default)
           submenuContainer.innerHTML += `
-              <div id="ph-extra-fields" style="display:none; margin-top:10px; padding-left:10px; border-left:2px solid #ccc;">
-                <div class="submenu-item">
-                  <label>9.6 ชื่อสารเคมี
-                    <select name="submenu-9.6" id="submenu-9-6" required>
-                      <option value="">-- เลือกรหัสสูตรปุ๋ย --</option>
-                    </select>
-                  </label>
-                </div>
-                <div class="submenu-item">
-                  <label>9.7 ปริมาณปุ๋ยที่ใช้</label>
-                  <div style="display:flex; gap:10px;">
-                    <input type="number" name="submenu-9.7.1" placeholder="ปริมาณ" min="0" step="0.01" required />
-                    <select name="submenu-9.7.2" required>
-                      <option value="">หน่วย</option>
-                      <option value="kg">kg</option>
-                      <option value="L">L</option>
-                      <option value="Bottle">ขวด</option>
-                      <option value="Bag">ถุง</option>
-                      <option value="Tablet">เม็ด</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="submenu-item">
-                  <label>9.8 พื้นที่ของต้นไม้ที่เน้น
-                    <select name="submenu-9.8" required>
-                      <option value="">-- เลือกบริเวณของต้นไม้ --</option>
-                      <option value="ใบ">ใบ</option>
-                      <option value="กิ่ง">กิ่ง</option>
-                      <option value="ผล">ผล</option>
-                      <option value="โคนต้น">โคนต้น</option>
-                    </select>
-                  </label>
+            <div id="ph-extra-fields" style="display:none; margin-top:10px; padding-left:10px; border-left:2px solid #ccc;">
+              <div class="submenu-item">
+                <label>9.6 ชื่อสารเคมี
+                  <select name="submenu-9.6" id="submenu-9-6" data-formula-dropdown required>
+                    <option value="">-- เลือกรหัสสูตรปุ๋ย --</option>
+                  </select>
+                </label>
+              </div>
+              <div class="submenu-item">
+                <label>9.7 ปริมาณปุ๋ยที่ใช้</label>
+                <div style="display:flex; gap:10px;">
+                  <input type="number" name="submenu-9.7.1" placeholder="ปริมาณ" min="0" step="0.01" required />
+                  <select name="submenu-9.7.2" required>
+                    <option value="">หน่วย</option>
+                    <option value="kg">kg</option>
+                    <option value="L">L</option>
+                    <option value="Bottle">ขวด</option>
+                    <option value="Bag">ถุง</option>
+                    <option value="Tablet">เม็ด</option>
+                  </select>
                 </div>
               </div>
-            `;
+              <div class="submenu-item">
+                <label>9.8 พื้นที่ของต้นไม้ที่เน้น
+                  <select name="submenu-9.8" required>
+                    <option value="">-- เลือกบริเวณของต้นไม้ --</option>
+                    <option value="ใบ">ใบ</option>
+                    <option value="กิ่ง">กิ่ง</option>
+                    <option value="ผล">ผล</option>
+                    <option value="โคนต้น">โคนต้น</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          `;
 
-          // Wait for dropdown to appear, then populate with formula IDs
+          // Load formula IDs into 9.6 dropdown
+          const loadFormulaDropdown = async () => {
+            try {
+              const select = document.getElementById('submenu-9-6');
+              const res = await fetch('/api/formulas');
+              if (!res.ok) throw new Error('Failed to fetch formula IDs');
+              const data = await res.json();
+              const formulas = data.formulas || [];
+
+              select.innerHTML = '<option value="">-- เลือกรหัสสูตรปุ๋ย --</option>';
+              formulas.forEach(f => {
+                const option = document.createElement('option');
+                option.value = f.id;
+                option.textContent = f.id;
+                select.appendChild(option);
+              });
+            } catch (err) {
+              console.error('Error loading formula IDs for submenu 9.6:', err);
+            }
+          };
+
+          // Wait for submenu-9.1 to exist before attaching event
           const waitForElement = (id, callback, interval = 50, maxAttempts = 20) => {
             let attempts = 0;
             const timer = setInterval(() => {
@@ -915,76 +940,37 @@ window.onload = () => {
             }, interval);
           };
 
-          const loadChemicals = (select, type) => {
-            const urlMap = {
-              'PH04': '/api/formula-ids',
-              'PH05': '/api/pesticide-names',
-              'PH06': '/api/pesticide-names'
-            };
-            const url = urlMap[type];
-            if (!url) return;
+          waitForElement('submenu-9.1', (phSelect) => {
+            const phextraFields = document.getElementById('ph-extra-fields');
 
-            fetch(url)
-              .then(res => res.json())
-              .then(data => {
-                let names = [];
-                if (type === 'PH04') {
-                  // /api/formula-ids returns { formula_ids: [...] }
-                  names = data.formula_ids || [];
-                } else {
-                  // /api/pesticide-names returns an array directly
-                  names = Array.isArray(data) ? data : [];
-                }
-                select.innerHTML = '<option value="">-- เลือกรายการสารเคมี --</option>';
-                names.forEach(name => {
-                  const option = document.createElement('option');
-                  option.value = name;
-                  option.textContent = name;
-                  select.appendChild(option);
-                });
-              })
-              .catch(err => {
-                console.error(`Failed to load ${type} names for submenu 9.6:`, err);
+            const toggleExtraFields = () => {
+              const selectedValue = phSelect.value;
+
+              // Show extra fields only for PH04–PH06
+              const show = ['การใส่ปุ๋ยหลังเก็บเกี่ยว', 
+                            'การป้องกันและกำจัดศัตรูพืช', 
+                            'การกำจัดวัชพืช'].includes(selectedValue);
+
+              phextraFields.style.display = show ? 'block' : 'none';
+
+              // Set or remove required attributes
+              phextraFields.querySelectorAll('select, input').forEach(el => {
+                if (show) el.setAttribute('required', 'required');
+                else el.removeAttribute('required');
               });
-          };
 
-          waitForElement('submenu-9-6', (select9_6) => {
-            const phSelect = submenuContainer.querySelector('[id="submenu-9.1"]');
-            const phextraFields = submenuContainer.querySelector('#ph-extra-fields');
+              // Load formulas only if visible
+              if (show) loadFormulaDropdown();
+            };
 
-            if (phSelect && phextraFields) {
-              const updateFieldsAndLoad = () => {
-                const selectedText = phSelect.options[phSelect.selectedIndex]?.text?.toUpperCase() || '';
-                const show = ['PH04', 'PH05', 'PH06'].some(code => selectedText.startsWith(code));
-                phextraFields.style.display = show ? 'block' : 'none';
+            // Attach change listener
+            phSelect.addEventListener('change', toggleExtraFields);
 
-                const toggleRequired = (selector, enable) => {
-                  phextraFields.querySelectorAll(selector).forEach(el => {
-                    if (enable) {
-                      el.setAttribute('required', 'required');
-                    } else {
-                      el.removeAttribute('required');
-                    }
-                  });
-                };
-
-                // If visible, make required; if hidden, remove required
-                toggleRequired('select, input', show);
-
-                if (selectedText.startsWith('PH04')) {
-                  loadChemicals(select9_6, 'PH04');
-                } else if (selectedText.startsWith('PH05')) {
-                  loadChemicals(select9_6, 'PH05');
-                } else if (selectedText.startsWith('PH06')) {
-                  loadChemicals(select9_6, 'PH06');
-                }
-              };
-
-              phSelect.addEventListener('change', updateFieldsAndLoad);
-              updateFieldsAndLoad(); // initial
-            }
+            // Initial check
+            toggleExtraFields();
           });
         }
+
 
         ['2', '4', '5', '6', '7', '8', '9'].forEach(id => {
           const container2 = submenuContainer.querySelector(`#submenu-${id}-2-container`);
