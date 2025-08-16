@@ -381,14 +381,15 @@ window.onload = () => {
             };
 
             waitForElement('submenu-2-4', (select) => {
-              fetch('/api/formula-ids')
+              fetch('/api/formulas')
                 .then(res => res.json())
                 .then(data => {
-                  const formulaIds = data.formula_ids || [];
-                  formulaIds.forEach(id => {
+                  const formulas = data.formulas || [];
+                  select.innerHTML = '<option value="">-- เลือกรหัสสูตรปุ๋ย --</option>';
+                  formulas.forEach(f => {
                     const option = document.createElement('option');
-                    option.value = id;
-                    option.textContent = id;
+                    option.value = f.id;
+                    option.textContent = f.id;
                     select.appendChild(option);
                   });
                 })
@@ -809,7 +810,7 @@ window.onload = () => {
             <div id="gc07-extra-fields" style="display:none; margin-top:10px; padding-left:10px; border-left:2px solid #ccc;">
               <div class="submenu-item">
                 <label>4.6 ชื่อสารเคมี:
-                  <select name="submenu-4.6" data-formula-dropdown></select>
+                  <select name="submenu-4.6" id="submenu-4-6" data-formula-dropdown></select>
                 </label>
               </div>
               <div class="submenu-item">
@@ -841,7 +842,26 @@ window.onload = () => {
             </div>
           `;
 
-          loadPesticideNamesFor46();
+          // Load formula IDs into 4.6 dropdown
+          const loadFormulaDropdown = async () => {
+            try {
+              const select = document.getElementById('submenu-4-6');
+              const res = await fetch('/api/formulas');
+              if (!res.ok) throw new Error('Failed to fetch formula IDs');
+              const data = await res.json();
+              const formulas = data.formulas || [];
+
+              select.innerHTML = '<option value="">-- เลือกรหัสสูตรปุ๋ย --</option>';
+              formulas.forEach(f => {
+                const option = document.createElement('option');
+                option.value = f.id;
+                option.textContent = f.id;
+                select.appendChild(option);
+              });
+            } catch (err) {
+              console.error('Error loading formula IDs for submenu 4.6:', err);
+            }
+          };
 
           const gc07Select = submenuContainer.querySelector('[id="submenu-4.1"]');
           const gc07extraFields = submenuContainer.querySelector('#gc07-extra-fields');
@@ -853,19 +873,18 @@ window.onload = () => {
               const isGC07 = gc07Select.value === 'พ่นสารเคมี';
               gc07extraFields.style.display = isGC07 ? 'block' : 'none';
               gc07Inputs.forEach(input => {
-                if (isGC07) {
-                  input.setAttribute('required', 'required');
-                } else {
-                  input.removeAttribute('required');
-                }
+                if (isGC07) input.setAttribute('required', 'required');
+                else input.removeAttribute('required');
               });
+
+              // Only load formulas when the extra fields are visible
+              if (isGC07) loadFormulaDropdown();
             };
 
             gc07Select.addEventListener('change', toggleGC07Fields);
             toggleGC07Fields(); // initial state
           }
         }
-
 
         if (activityId === '9') {
           // Append extra fields (hidden by default)
