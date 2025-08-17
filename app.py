@@ -68,6 +68,9 @@ def home():
 def newitem_page():
     return render_template('newitem.html')
 
+@app.route("/inventory")
+def inventory_page():
+    return render_template("inventory.html")
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
