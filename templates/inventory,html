@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inventory</title>
+    <link rel="stylesheet" href="/static/styles/style.css">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon.png">
+    <style>
+        .table-container {
+            overflow-x: auto;
+            max-width: 100%;
+            margin-top: 20px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: white;
+        }
+
+        .table-container table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background-color: #333;
+            border-bottom: 2px solid #ccc;
+        }
+
+        th, td {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            font-family: Arial, sans-serif;
+        }
+
+        td {
+            background-color: #222;
+        }
+
+        th:hover {
+            background-color: #444;
+        }
+
+        .button {
+            padding: 6px 12px;
+            background-color: #4574a0;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .button:hover {
+            background-color: #67abeb;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <img src="/static/images/logo.png" alt="Air4four Logo" class="site-logo">
+        <h1>ระบบคลังสารเคมี</h1>
+        <div>
+            <button onclick="window.location.href='/'">บ้าน</button>
+            <button onclick="window.location.href='/newitem'">รายการใหม่</button>
+            <button onclick="window.location.href='/admin/view-log'">ดูแผ่นงาน</button>
+            <button onclick="window.location.href='/inventory'">คลังสินค้า</button>
+            <button onclick="window.location.href='/logout'">ออกจากระบบ</button>
+        </div>
+    </header>
+
+    <main>
+        <h2>Inventory Stock Overview</h2>
+        <button id="reset-btn">Reset Usage</button>
+        <div class="table-container">
+            <table id="inventory-table">
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>TH Product Name</th>
+                        <th>Supplier</th>
+                        <th>Category</th>
+                        <th>Package Type</th>
+                        <th>Package Size Per</th>
+                        <th>Scientific Unit Type</th>
+                        <th>Bulk Case Quantity</th>
+                        <th>Bulk Pricing</th>
+                        <th>Package Pricing</th>
+                        <th>Unit Pricing</th>
+                        <th>Total Bulk Case Stocked</th>
+                        <th>Total Packages Stocked</th>
+                        <th>Total Quantity Stocked</th>
+                        <th>Total Packages Used</th>
+                        <th>Total Quantity Used</th>
+                        <th>Monthly Packages Used</th>
+                        <th>Monthly Quantity Used</th>
+                        <th>Monthly Packages to Order</th>
+                        <th>Monthly Quantity to Order</th>
+                        <th>Min Threshold</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data rows will be inserted by inventory.js -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="/static/scripts/inventory.js"></script>
+</body>
+</html>

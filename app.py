@@ -34,8 +34,10 @@ LOG_SHEET = 'DailyLog'
 TREE_SHEET = 'CleanedSheet1'
 ACTIVITIES_SHEET = 'Activities'
 FORMULAIDS = 'FormuMetadata'
-FORMULATIONS = "Formulations"
+FORMULATIONS = 'Formulations'
 EQUIP_SHEET = 'Equipment'
+INVENTORY = 'Inventory'
+INVENTORY_RANGE = f"{INVENTORY}!A1:U"
 
 # Admin/User credentials
 USERS = {
@@ -884,7 +886,201 @@ def save_soil_test():
         # keep the real error for logs, but return a friendly message
         app.logger.exception("Failed to save soil test")
         return jsonify({'error': 'Failed to save soil test', 'details': str(e)}), 500
+    
+@app.route("/api/inventory", methods=["GET"])
+def get_inventory():
+    result = sheet.values().get(
+        spreadsheetId=CHEMICALS_SHEET_ID,
+        range=INVENTORY_RANGE
+    ).execute()
 
+    values = result.get("values", [])
+    if not values:
+        return jsonify([])
+
+    headers = values[0]
+    rows = values[1:]
+    inventory = []
+
+    for row in rows:
+        if len(row) < len(headers):
+            row += [""] * (len(headers) - len(row))
+        item = dict(zip(headers, row))
+        try:
+            stocked = float(item.get("Total Quantity Stocked", 0))
+            used = float(item.get("Total Quantity Used", 0))
+            item["Available"] = stocked - used
+        except:
+            item["Available"] = 0
+        inventory.append(item)
+
+    return jsonify(inventory)
+
+
+# ===== 2. USE INVENTORY =====
+@app.route("/api/inventory/use", methods=["POST"])
+def use_inventory():
+    data = request.json
+    product_name = data.get("product")
+    amount = float(data.get("quantity", 0))
+
+    # Fetch current inventory
+    result = sheet.values().get(
+        spreadsheetId=CHEMICALS_SHEET_ID,
+        range=INVENTORY_RANGE
+    ).execute()
+
+    values = result.get("values", [])
+    if not values:
+        return jsonify({"status": "error", "message": "No data found"}), 404
+    
+    headers = values[0]
+    rows = values[1:]
+    header_idx = {h: i for i, h in enumerate(headers)}
+
+    used_idx = header_idx.get("Total Quantity Used")
+    if used_idx is None:
+        return jsonify({"status": "error", "message": "'Total Quantity Used' column not found"}), 400
+
+    updated = False
+    for i, row in enumerate(rows, start=2):
+        if len(row) <= used_idx:
+            row += ["0"] * (used_idx - len(row) + 1)
+        if row[header_idx["Product Name"]] == product_name:
+            current_used = float(row[used_idx] or 0)
+            row[used_idx] = str(current_used + amount)
+            # Update the sheet
+            sheet.values().update(
+                spreadsheetId=CHEMICALS_SHEET_ID,
+                range=f"Inventory!A{i}:U{i}",
+                valueInputOption="RAW",
+                body={"values": [row]}
+            ).execute()
+            updated = True
+            break
+
+    if not updated:
+        return jsonify({"status": "error", "message": f"Product {product_name} not found"}), 404    
+
+    return jsonify({"status": "success"})
+
+
+# ===== 3. RESET INVENTORY =====
+@app.route("/api/inventory/reset", methods=["POST"])
+def reset_all_usage():
+    result = sheet.values().get(
+        spreadsheetId=CHEMICALS_SHEET_ID,
+        range=INVENTORY_RANGE
+    ).execute()
+    values = result.get("values", [])
+    if not values:
+        return jsonify({"status": "error", "message": "No data found"}), 404
+
+    headers = values[0]
+    rows = values[1:]
+    used_idx = headers.index("Total Quantity Used") if "Total Quantity Used" in headers else None
+    if used_idx is None:
+        return jsonify({"status": "error", "message": "'Total Quantity Used' column not found"}), 400
+
+    for i, row in enumerate(rows, start=2):
+        if len(row) <= used_idx:
+            row += ["0"] * (used_idx - len(row) + 1)
+        row[used_idx] = "0"
+        sheet.values().update(
+            spreadsheetId=CHEMICALS_SHEET_ID,
+            range=f"Inventory!A{i}:U{i}",
+            valueInputOption="RAW",
+            body={"values": [row]}
+        ).execute()
+
+    return jsonify({"status": "success", "message": "All usage reset"})
+
+@app.route("/api/inventory/reset/<product_name>", methods=["POST"])
+def reset_product_usage(product_name):
+    result = sheet.values().get(
+        spreadsheetId=CHEMICALS_SHEET_ID,
+        range=INVENTORY_RANGE
+    ).execute()
+    values = result.get("values", [])
+    if not values:
+        return jsonify({"status": "error", "message": "No data found"}), 404
+
+    headers = values[0]
+    rows = values[1:]
+    header_idx = {h: i for i, h in enumerate(headers)}
+    
+    used_cols = ["Total Quantity Used", "Total Packages Used", "Monthly Quantity Used", "Monthly Packages Used"]
+    found = False
+    for i, row in enumerate(rows, start=2):
+        if row[header_idx["Product Name"]] == product_name:
+            for col in used_cols:
+                if col not in header_idx:
+                    continue
+                idx = header_idx[col]
+                if len(row) <= idx:
+                    row += ["0"] * (idx - len(row) + 1)
+                row[idx] = "0"
+            sheet.values().update(
+                spreadsheetId=CHEMICALS_SHEET_ID,
+                range=f"Inventory!A{i}:U{i}",
+                valueInputOption="RAW",
+                body={"values": [row]}
+            ).execute()
+            found = True
+            break
+
+    if not found:
+        return jsonify({"status": "error", "message": f"Product {product_name} not found"}), 404
+
+    return jsonify({"status": "success", "message": f"Usage reset for {product_name}"})
+
+# ===== 4. ADD NEW STOCK =====
+@app.route("/api/inventory/add", methods=["POST"])
+def add_stock():
+    data = request.json
+    product = data.get("product")
+    amount = float(data.get("amount", 0))
+    unit = data.get("unit", "")
+
+    # Fetch inventory
+    result = sheet.values().get(
+        spreadsheetId=CHEMICALS_SHEET_ID,
+        range=INVENTORY_RANGE
+    ).execute()
+
+    values = result.get("values", [])
+    headers = values[0]
+    rows = values[1:]
+
+    found = False
+    for i, row in enumerate(rows, start=2):
+        if row[0] == product:
+            stocked = float(row[1]) if len(row) > 1 else 0
+            row[1] = str(stocked + amount)
+            if unit:
+                if len(row) < 5:
+                    row += [""] * (5 - len(row))
+                row[4] = unit
+            sheet.values().update(
+                spreadsheetId=CHEMICALS_SHEET_ID,
+                range=f"Inventory!A{i}:U{i}",
+                valueInputOption="RAW",
+                body={"values": [row]}
+            ).execute()
+            found = True
+            break
+
+    # If product not found → append new row
+    if not found:
+        new_row = [product, str(amount), "0", str(amount), unit]
+        sheet.values().append(
+            spreadsheetId=CHEMICALS_SHEET_ID,
+            range="Inventory!A:U",
+            valueInputOption="RAW",
+            body={"values": [new_row]}
+        ).execute()
+
+    return jsonify({"status": "stock added"})
 
 if __name__ == '__main__':
     app.run(debug=True)
