@@ -359,6 +359,117 @@ def submit_log():
         seen = set()
         return [x for x in seq if not (x in seen or seen.add(x))]
 
+    def update_inventory_from_formula(sheet_service, formula_id, formula_amount, unit=None):
+        def normalize_header(h):
+            if not h:
+                return ""
+            return h.strip().lower().replace('\xa0',' ').replace('(','').replace(')','')  # remove extra spaces, non-breaking spaces, parentheses
+
+        # --- Fetch formulations ---
+        formulations_data = sheet_service.values().get(
+            spreadsheetId=CHEMICALS_SHEET_ID,
+            range=f"{FORMULATIONS}!A1:Z"
+        ).execute().get("values", [])
+
+        if not formulations_data or len(formulations_data) < 2:
+            print("⚠️ No formulations data found.")
+            return
+
+        headers = [normalize_header(h) for h in formulations_data[0]]
+        rows = formulations_data[1:]
+        idx = {h: i for i, h in enumerate(headers)}
+
+        # Map required columns
+        required_columns = ["formula id", "product name", "amount", "water volume l"]
+        for col in required_columns:
+            if col not in idx:
+                print(f"❌ ERROR: Required column '{col}' missing in formulations sheet")
+                return
+
+        # --- Find formula rows ---
+        formula_rows = [r for r in rows if len(r) > idx["formula id"] and r[idx["formula id"]].strip() == formula_id]
+        if not formula_rows:
+            print(f"⚠️ Formula {formula_id} not found in formulations sheet.")
+            return
+
+        # --- Get total water volume ---
+        try:
+            total_volume = float(formula_rows[0][idx["water volume l"]].strip() or 0)
+        except Exception as e:
+            print(f"⚠️ Error reading Total Water Volume for formula {formula_id}: {e}")
+            return
+
+        if total_volume <= 0:
+            print(f"⚠️ Total Water Volume is zero or invalid for formula {formula_id}")
+            return
+
+        # --- Calculate factor ---
+        try:
+            applied_amount = float(formula_amount)
+            if unit and unit.lower() == 'kg':
+                applied_amount = applied_amount  # adjust for density if needed
+            factor = applied_amount / total_volume
+        except Exception as e:
+            print(f"⚠️ Error parsing applied amount {formula_amount}: {e}")
+            return
+
+        # --- Fetch inventory ---
+        inventory_data = sheet_service.values().get(
+            spreadsheetId=CHEMICALS_SHEET_ID,
+            range=f"{INVENTORY}!A1:U"
+        ).execute().get("values", [])
+
+        if not inventory_data or len(inventory_data) < 2:
+            print("⚠️ No inventory data found.")
+            return
+
+        inv_headers = [normalize_header(h) for h in inventory_data[0]]
+        inv_rows = inventory_data[1:]
+        inv_idx = {h: i for i, h in enumerate(inv_headers)}
+
+        used_idx = inv_idx.get("total quantity used")
+        name_idx = inv_idx.get("product name")
+        if used_idx is None or name_idx is None:
+            print("⚠️ Inventory sheet missing required columns.")
+            return
+
+        # --- Update inventory ---
+        for fr in formula_rows:
+            try:
+                product = fr[idx["product name"]].strip()
+                chem_amount = float(fr[idx["amount"]].strip() or 0)
+                usage = chem_amount * factor
+            except Exception as e:
+                print(f"⚠️ Error calculating usage for product: {e}")
+                continue
+
+            updated = False
+            for i, row in enumerate(inv_rows, start=2):
+                if len(row) <= max(used_idx, name_idx):
+                    # extend row if shorter than expected
+                    row += [''] * (max(used_idx, name_idx) - len(row) + 1)
+
+                if row[name_idx].strip() == product:
+                    try:
+                        current_used = float(row[used_idx].strip() or 0)
+                        new_total = current_used + usage
+                        # Update only the single cell in the "Total Quantity Used" column
+                        col_letter = chr(65 + used_idx)  # convert index to letter (A=0)
+                        sheet_service.values().update(
+                            spreadsheetId=CHEMICALS_SHEET_ID,
+                            range=f"{INVENTORY}!{col_letter}{i}",
+                            valueInputOption="RAW",
+                            body={"values": [[new_total]]}
+                        ).execute()
+                        updated = True
+                    except Exception as e:
+                        print(f"⚠️ Failed updating inventory row for {product}: {e}")
+                    break
+
+            if not updated:
+                print(f"⚠️ Product {product} not found in Inventory sheet.")
+
+
     phases, zones, lines, treeIDs = [], [], [], []
 
     for loc in locations:
@@ -431,6 +542,17 @@ def submit_log():
             submenus.get('submenu-5.4', '')   # Observations
         ]
         treecare_rows.append(treecare_row)
+
+        # 🔹 TreeCare (Activity 2 → update Inventory)
+        if any(act.get('id') == '2' for act in activities):
+            formula_id = submenus.get('submenu-2.4', '')     # Fertilizer Formula
+            amount = submenus.get('submenu-2.6.1', '')       # Fertilizer Amount
+            unit = submenus.get('submenu-2.6.2', '')         # Unit (kg or L)
+            if formula_id and amount:
+                try:
+                    update_inventory_from_formula(sheet_service, formula_id, amount, unit)
+                except Exception as e:
+                    print(f"⚠️ Error updating inventory for formula {formula_id}: {e}")
     
     if treecare_rows:
         sheet_service.values().append(
@@ -460,6 +582,13 @@ def submit_log():
                 submenus.get('submenu-4.7.2', ''), # J: Unit Type
                 submenus.get('submenu-4.8', ''),   # K: Tank Size
             ]
+
+            if submenus.get('submenu-4.1') == 'GC07':
+                formula_id = submenus.get('submenu-4.6', '')
+                amount = submenus.get('submenu-4.7.1', '')
+                if formula_id and amount:
+                    update_inventory_from_formula(sheet_service, formula_id, amount)
+
         elif activity.get('id') == '10':
             gardencare_10_submenus = [
                 submenus.get('submenu-10.1', ''),  # Detail of Test Site (L)
@@ -493,7 +622,6 @@ def submit_log():
             valueInputOption="RAW",
             body={"values": gardencare_rows}
         ).execute()
-
 
     fruitflowercare_rows = []
 
@@ -542,6 +670,12 @@ def submit_log():
                 submenus.get('submenu-9.8', '')
             ]
 
+            if submenus.get('submenu-9.1') in ['PH04','PH05','PH06']:
+                formula_id = submenus.get('submenu-9.6', '')
+                amount = submenus.get('submenu-9.7.1', '')
+                if formula_id and amount:
+                    update_inventory_from_formula(sheet_service, formula_id, amount)
+
     # Only write if activity 6, 7, 8, or 9 was selected
     if any(act.get('id') in ['6', '7', '8', '9'] for act in activities):
         row = [
@@ -558,7 +692,6 @@ def submit_log():
             valueInputOption="RAW",
             body={"values": fruitflowercare_rows}
         ).execute()
-
 
     return jsonify({
     "status": "success",
