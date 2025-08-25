@@ -573,9 +573,16 @@ def submit_log():
             formula_id = submenus.get('submenu-2.4', '')     # Fertilizer Formula
             amount = submenus.get('submenu-2.6.1', '')       # Fertilizer Amount
             unit = submenus.get('submenu-2.6.2', '')         # Unit (kg or L)
+            
+            print(f"Activity 2 - Submenu Data: formula_id={formula_id}, amount={amount}, unit={unit}")
+            
             if formula_id and amount:
                 try:
-                    update_inventory_from_formula(sheet_service, formula_id, amount, unit)
+                    amount_float = float(amount)
+                    print(f"Updating inventory for formula {formula_id} with amount {amount_float} {unit or ''}")
+                    update_inventory_from_formula(sheet_service, formula_id, amount_float, unit)
+                except ValueError:
+                    print(f"⚠️ Invalid amount value '{amount}' for formula {formula_id}")
                 except Exception as e:
                     print(f"⚠️ Error updating inventory for formula {formula_id}: {e}")
     
@@ -720,8 +727,18 @@ def submit_log():
                 formula_id = submenus.get('submenu-9.6', '').strip()
                 amount = submenus.get('submenu-9.7.1', '').strip()
                 unit = submenus.get('submenu-9.7.2', '').strip()
+
+                print(f"Activity 9 - Submenu Data: ph_value={ph_value}, formula_id={formula_id}, amount={amount}, unit={unit}")
+
                 if formula_id and amount:
-                    update_inventory_from_formula(sheet_service, formula_id, amount, unit)
+                    try:
+                        amount_float = float(amount)
+                        print(f"Updating inventory for formula {formula_id} with amount {amount_float} {unit or ''}")
+                        update_inventory_from_formula(sheet_service, formula_id, amount_float, unit)
+                    except ValueError:
+                        print(f"⚠️ Invalid amount value '{amount}' for formula {formula_id}")
+                    except Exception as e:
+                        print(f"⚠️ Error updating inventory for formula {formula_id}: {e}")
 
 
     # Only write if activity 6, 7, 8, or 9 was selected
