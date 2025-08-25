@@ -412,11 +412,26 @@ def submit_log():
         # --- Calculate factor ---
         try:
             applied_amount = float(formula_amount)
-            if unit and unit.lower() == 'kg':
-                applied_amount = applied_amount  # adjust for density if needed
+            # Normalize units
+            if unit:
+                u = unit.strip().lower()
+            else:
+                # fallback to formula's default unit
+                u = formula_rows[0][idx.get("unit","kg")].strip().lower() or "kg"
+
+            # Convert to liters or kilograms depending on context
+            if u in ["kg", "kilogram", "kilograms"]:
+                pass  # already kg
+            elif u in ["g", "gram", "grams"]:
+                applied_amount = applied_amount / 1000.0  # g → kg
+            elif u in ["l", "liter", "liters"]:
+                pass  # already liters
+            elif u in ["ml", "milliliter", "milliliters"]:
+                applied_amount = applied_amount / 1000.0  # mL → L
+
             factor = applied_amount / total_volume
         except Exception as e:
-            print(f"⚠️ Error parsing applied amount {formula_amount}: {e}")
+            print(f"⚠️ Error parsing applied amount {formula_amount} {unit}: {e}")
             return
 
         # --- Fetch inventory ---
@@ -698,11 +713,16 @@ def submit_log():
                 submenus.get('submenu-9.8', '')
             ]
 
-            if submenus.get('submenu-9.1') in ['PH04','PH05','PH06']:
-                formula_id = submenus.get('submenu-9.6', '')
-                amount = submenus.get('submenu-9.7.1', '')
+            # Normalize
+            ph_value = submenus.get('submenu-9.1', '').strip()
+
+            if ph_value in ['การใส่ปุ๋ยหลังเก็บเกี่ยว', 'การป้องกันและกำจัดศัตรูพืช', 'การกำจัดวัชพืช']:
+                formula_id = submenus.get('submenu-9.6', '').strip()
+                amount = submenus.get('submenu-9.7.1', '').strip()
+                unit = submenus.get('submenu-9.7.2', '').strip()
                 if formula_id and amount:
-                    update_inventory_from_formula(sheet_service, formula_id, amount)
+                    update_inventory_from_formula(sheet_service, formula_id, amount, unit)
+
 
     # Only write if activity 6, 7, 8, or 9 was selected
     if any(act.get('id') in ['6', '7', '8', '9'] for act in activities):
