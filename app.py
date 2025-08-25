@@ -364,6 +364,12 @@ def submit_log():
             if not h:
                 return ""
             return h.strip().lower().replace('\xa0',' ').replace('(','').replace(')','')  # remove extra spaces, non-breaking spaces, parentheses
+        
+        def normalize_name(n):
+            if not n:
+                return ""
+            return n.strip().lower().replace('\xa0',' ').replace('(','').replace(')','')
+
 
         # --- Fetch formulations ---
         formulations_data = sheet_service.values().get(
@@ -449,12 +455,15 @@ def submit_log():
                     # extend row if shorter than expected
                     row += [''] * (max(used_idx, name_idx) - len(row) + 1)
 
-                if row[name_idx].strip() == product:
+                inv_product_name = row[name_idx]
+                if normalize_name(inv_product_name) == normalize_name(product):
                     try:
                         current_used = float(row[used_idx].strip() or 0)
                         new_total = current_used + usage
-                        # Update only the single cell in the "Total Quantity Used" column
-                        col_letter = chr(65 + used_idx)  # convert index to letter (A=0)
+
+                        col_letter = chr(65 + used_idx)
+                        print(f"✅ Updating '{product}' (row {i}): {current_used} + {usage} = {new_total}")
+
                         sheet_service.values().update(
                             spreadsheetId=CHEMICALS_SHEET_ID,
                             range=f"{INVENTORY}!{col_letter}{i}",
@@ -462,9 +471,10 @@ def submit_log():
                             body={"values": [[new_total]]}
                         ).execute()
                         updated = True
+                        break
                     except Exception as e:
                         print(f"⚠️ Failed updating inventory row for {product}: {e}")
-                    break
+                        break
 
             if not updated:
                 print(f"⚠️ Product {product} not found in Inventory sheet.")
@@ -580,14 +590,32 @@ def submit_log():
                 submenus.get('submenu-4.6', ''),   # H: Chemical Name
                 submenus.get('submenu-4.7.1', ''), # I: Amount Used
                 submenus.get('submenu-4.7.2', ''), # J: Unit Type
-                submenus.get('submenu-4.8', ''),   # K: Tank Size
+                submenus.get('submenu-4.8', ''),   # K: Part of Tree Applied
             ]
 
-            if submenus.get('submenu-4.1') == 'GC07':
-                formula_id = submenus.get('submenu-4.6', '')
-                amount = submenus.get('submenu-4.7.1', '')
-                if formula_id and amount:
-                    update_inventory_from_formula(sheet_service, formula_id, amount)
+            # --- GC07 inventory update ---
+            activity_code = submenus.get('submenu-4.1', '').strip()
+            formula_id = submenus.get('submenu-4.6', '').strip()
+            amount = submenus.get('submenu-4.7.1', '').strip()
+            unit = submenus.get('submenu-4.7.2', '').strip()
+
+            print(f"Activity 4 - Submenu Data: code={activity_code}, formula_id={formula_id}, amount={amount}, unit={unit}")
+
+            if activity_code == 'พ่นสารเคมี':
+                if not formula_id:
+                    print("⚠️ No formula_id provided. Skipping inventory update.")
+                elif not amount:
+                    print("⚠️ No amount provided. Skipping inventory update.")
+                else:
+                    try:
+                        # Ensure amount is float
+                        amount_float = float(amount)
+                        print(f"Updating inventory for formula {formula_id} with amount {amount_float} {unit or ''}")
+                        update_inventory_from_formula(sheet_service, formula_id, amount_float, unit)
+                    except ValueError:
+                        print(f"⚠️ Invalid amount value '{amount}' for formula {formula_id}")
+                    except Exception as e:
+                        print(f"⚠️ Error updating inventory for formula {formula_id}: {e}")
 
         elif activity.get('id') == '10':
             gardencare_10_submenus = [
@@ -1114,61 +1142,73 @@ def reset_all_usage():
 
     headers = values[0]
     rows = values[1:]
-    used_idx = headers.index("Total Quantity Used") if "Total Quantity Used" in headers else None
-    if used_idx is None:
+    try:
+        used_idx = headers.index("Total Quantity Used")
+    except ValueError:
         return jsonify({"status": "error", "message": "'Total Quantity Used' column not found"}), 400
 
+    # Update only the Total Quantity Used column
     for i, row in enumerate(rows, start=2):
+        # If row is too short, extend it just enough for this column
         if len(row) <= used_idx:
-            row += ["0"] * (used_idx - len(row) + 1)
+            row += [''] * (used_idx - len(row) + 1)
+
+        # Reset only the Total Quantity Used value
         row[used_idx] = "0"
+
+        # Update just that single cell in Google Sheets
         sheet.values().update(
             spreadsheetId=CHEMICALS_SHEET_ID,
-            range=f"Inventory!A{i}:U{i}",
+            range=f"Inventory!{chr(65 + used_idx)}{i}",  # e.g., "O2" for column 15
             valueInputOption="RAW",
-            body={"values": [row]}
+            body={"values": [[row[used_idx]]]}
         ).execute()
 
     return jsonify({"status": "success", "message": "All usage reset"})
 
-@app.route("/api/inventory/reset/<product_name>", methods=["POST"])
-def reset_product_usage(product_name):
+@app.route("/api/inventory/reset/<formula_id>", methods=["POST"])
+def reset_usage_for_formula(formula_id):
+    # Fetch all inventory rows
     result = sheet.values().get(
         spreadsheetId=CHEMICALS_SHEET_ID,
         range=INVENTORY_RANGE
     ).execute()
     values = result.get("values", [])
-    if not values:
-        return jsonify({"status": "error", "message": "No data found"}), 404
+    if not values or len(values) < 2:
+        return jsonify({"status": "error", "message": "No inventory data found"}), 404
 
     headers = values[0]
     rows = values[1:]
-    header_idx = {h: i for i, h in enumerate(headers)}
-    
-    used_cols = ["Total Quantity Used", "Total Packages Used", "Monthly Quantity Used", "Monthly Packages Used"]
-    found = False
+
+    try:
+        name_idx = headers.index("Product Name")
+        used_idx = headers.index("Total Quantity Used")
+    except ValueError:
+        return jsonify({"status": "error", "message": "Required columns missing"}), 400
+
+    updated = False
     for i, row in enumerate(rows, start=2):
-        if row[header_idx["Product Name"]] == product_name:
-            for col in used_cols:
-                if col not in header_idx:
-                    continue
-                idx = header_idx[col]
-                if len(row) <= idx:
-                    row += ["0"] * (idx - len(row) + 1)
-                row[idx] = "0"
+        # Extend row if too short
+        if len(row) <= max(name_idx, used_idx):
+            row += [''] * (max(name_idx, used_idx) - len(row) + 1)
+
+        if row[name_idx].strip() == formula_id:
+            # Reset only the usage column
+            row[used_idx] = "0"
             sheet.values().update(
                 spreadsheetId=CHEMICALS_SHEET_ID,
-                range=f"Inventory!A{i}:U{i}",
+                range=f"Inventory!{chr(65 + used_idx)}{i}",  # e.g., "O2"
                 valueInputOption="RAW",
-                body={"values": [row]}
+                body={"values": [[row[used_idx]]]}
             ).execute()
-            found = True
+            updated = True
             break
 
-    if not found:
-        return jsonify({"status": "error", "message": f"Product {product_name} not found"}), 404
+    if not updated:
+        return jsonify({"status": "error", "message": f"Product '{formula_id}' not found"}), 404
 
-    return jsonify({"status": "success", "message": f"Usage reset for {product_name}"})
+    return jsonify({"status": "success", "message": f"Usage for '{formula_id}' reset"})
+
 
 # ===== 4. ADD NEW STOCK =====
 @app.route("/api/inventory/add", methods=["POST"])
