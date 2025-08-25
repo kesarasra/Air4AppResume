@@ -39,6 +39,7 @@ EQUIP_SHEET = 'Equipment'
 INVENTORY = 'Inventory'
 INVENTORY_RANGE = f"{INVENTORY}!A1:U"
 
+
 # Admin/User credentials
 USERS = {
     'admin': 'admina44',
@@ -370,6 +371,40 @@ def submit_log():
                 return ""
             return n.strip().lower().replace('\xa0',' ').replace('(','').replace(')','')
 
+        # --- Helper: get package size and base unit ---
+        def get_package_size_and_unit(product_name):
+            product_name_norm = normalize_name(product_name)
+
+            # Fertilizers sheet
+            fert_data = sheet_service.values().get(
+                spreadsheetId=CHEMICALS_SHEET_ID,
+                range="Fertilizers!A1:S"
+            ).execute().get("values", [])
+            if fert_data and len(fert_data) > 1:
+                headers = [normalize_header(h) for h in fert_data[0]]
+                idx = {h: i for i, h in enumerate(headers)}
+                for row in fert_data[1:]:
+                    if len(row) > idx["product name"] and normalize_name(row[idx["product name"]]) == product_name_norm:
+                        package_size = row[idx.get("package size", idx.get("r", 0))] or 1
+                        base_unit = row[idx.get("unit", idx.get("s", 0))] or "kg"
+                        return float(package_size), base_unit.lower()
+
+            # Pesticide/Herbicide/Fungicide sheet
+            pest_data = sheet_service.values().get(
+                spreadsheetId=CHEMICALS_SHEET_ID,
+                range="Pesticide/Herbicide/Fungicide!A1:M"
+            ).execute().get("values", [])
+            if pest_data and len(pest_data) > 1:
+                headers = [normalize_header(h) for h in pest_data[0]]
+                idx = {h: i for i, h in enumerate(headers)}
+                for row in pest_data[1:]:
+                    if len(row) > idx["product name"] and normalize_name(row[idx["product name"]]) == product_name_norm:
+                        package_size = row[idx.get("package size", idx.get("l", 0))] or 1
+                        base_unit = row[idx.get("unit", idx.get("m", 0))] or "kg"
+                        return float(package_size), base_unit.lower()
+
+            # Default fallback
+            return 1, "kg"
 
         # --- Fetch formulations ---
         formulations_data = sheet_service.values().get(
@@ -386,7 +421,7 @@ def submit_log():
         idx = {h: i for i, h in enumerate(headers)}
 
         # Map required columns
-        required_columns = ["formula id", "product name", "amount", "water volume l"]
+        required_columns = ["formula id", "product name", "amount", "unit", "water volume l"]
         for col in required_columns:
             if col not in idx:
                 print(f"❌ ERROR: Required column '{col}' missing in formulations sheet")
@@ -428,6 +463,18 @@ def submit_log():
                 pass  # already liters
             elif u in ["ml", "milliliter", "milliliters"]:
                 applied_amount = applied_amount / 1000.0  # mL → L
+            elif u in ["bottle", "bag", "tablet"]:
+                # Determine package size from Fertilizers or Pesticide sheet
+                try:
+                    # Example: lookup function you'll need to implement
+                    product = fr[idx["product name"]].strip()
+                    package_size, base_unit = get_package_size_and_unit(product)
+                    # Multiply by the number of bottles/bags/tablets
+                    applied_amount = applied_amount * float(package_size)
+                    u = base_unit  # override to kg or L
+                except Exception as e:
+                    print(f"⚠️ Failed to convert {product} {u} to base unit: {e}")
+                    return
 
             factor = applied_amount / total_volume
         except Exception as e:
@@ -453,46 +500,52 @@ def submit_log():
         if used_idx is None or name_idx is None:
             print("⚠️ Inventory sheet missing required columns.")
             return
+        
+        # --- Build inventory mapping (Thai + English names) ---
+        inv_map = {}
+        for i, row in enumerate(inv_rows, start=2):  # 1-indexed for Sheets
+            if len(row) <= max(name_idx, used_idx):
+                row += [''] * (max(name_idx, used_idx) - len(row) + 1)
+            inv_map[normalize_name(row[name_idx])] = i
 
         # --- Update inventory ---
         for fr in formula_rows:
             try:
                 product = fr[idx["product name"]].strip()
                 chem_amount = float(fr[idx["amount"]].strip() or 0)
+                product_unit = fr[idx.get("unit", "kg")].strip().lower()
+
+                # Normalize if needed
+                if product_unit in ["bottle", "bag", "tablet"]:
+                    package_size, base_unit = get_package_size_and_unit(product)
+                    chem_amount *= package_size
+                    product_unit = base_unit
+
+                # Factor = applied amount / total water volume
+                applied_amount = float(formula_amount)
+                factor = applied_amount / total_volume
                 usage = chem_amount * factor
+
+                lookup_name = normalize_name(product)
+                if lookup_name in inv_map:
+                    row_number = inv_map[lookup_name]
+                    current_used = float(inv_rows[row_number - 2][used_idx].strip() or 0)
+                    new_total = current_used + usage
+                    col_letter = chr(65 + used_idx)
+
+                    print(f"✅ Updating '{product}' (row {row_number}): {current_used} + {usage} = {new_total}")
+
+                    sheet_service.values().update(
+                        spreadsheetId=CHEMICALS_SHEET_ID,
+                        range=f"{INVENTORY}!{col_letter}{row_number}",
+                        valueInputOption="RAW",
+                        body={"values": [[new_total]]}
+                    ).execute()
+                else:
+                    print(f"⚠️ Product '{product}' not found in Inventory sheet.")
+
             except Exception as e:
-                print(f"⚠️ Error calculating usage for product: {e}")
-                continue
-
-            updated = False
-            for i, row in enumerate(inv_rows, start=2):
-                if len(row) <= max(used_idx, name_idx):
-                    # extend row if shorter than expected
-                    row += [''] * (max(used_idx, name_idx) - len(row) + 1)
-
-                inv_product_name = row[name_idx]
-                if normalize_name(inv_product_name) == normalize_name(product):
-                    try:
-                        current_used = float(row[used_idx].strip() or 0)
-                        new_total = current_used + usage
-
-                        col_letter = chr(65 + used_idx)
-                        print(f"✅ Updating '{product}' (row {i}): {current_used} + {usage} = {new_total}")
-
-                        sheet_service.values().update(
-                            spreadsheetId=CHEMICALS_SHEET_ID,
-                            range=f"{INVENTORY}!{col_letter}{i}",
-                            valueInputOption="RAW",
-                            body={"values": [[new_total]]}
-                        ).execute()
-                        updated = True
-                        break
-                    except Exception as e:
-                        print(f"⚠️ Failed updating inventory row for {product}: {e}")
-                        break
-
-            if not updated:
-                print(f"⚠️ Product {product} not found in Inventory sheet.")
+                print(f"⚠️ Error updating inventory for product '{product}': {e}")
 
 
     phases, zones, lines, treeIDs = [], [], [], []
@@ -973,6 +1026,39 @@ def save_formula():
         return jsonify({'error': 'Invalid data submitted'}), 400
 
     try:
+        # --- Fetch product info for unit + package size ---
+        fertilizer_info = sheet.values().get(
+            spreadsheetId=CHEMICALS_SHEET_ID,
+            range='Fertilizers!A:S'
+        ).execute().get('values', [])
+
+        pesticide_info = sheet.values().get(
+            spreadsheetId=CHEMICALS_SHEET_ID,
+            range='Pesticide/Herbicide/Fungicide!A:M'
+        ).execute().get('values', [])
+
+        # Build mapping: product name -> {unit, package_size}
+        product_map = {}
+        for row in fertilizer_info[1:]:  # skip header
+            english_name = row[0].strip() if len(row) > 0 else ''
+            thai_name = row[1].strip() if len(row) > 1 else english_name
+            package_size = float(row[17]) if len(row) > 17 and row[17] else 1  # Col R (18th)
+            unit = row[18] if len(row) > 18 else 'kg'  # Col S (19th)
+
+            if english_name:
+                product_map[english_name] = {'unit': unit, 'package_size': package_size}
+            if thai_name:
+                product_map[thai_name] = {'unit': unit, 'package_size': package_size}
+
+        for row in pesticide_info[1:]:  # skip header
+            name = row[0]
+            package_size = float(row[11]) if len(row) > 11 and row[11] else 1  # Col L (12th)
+            unit = row[12] if len(row) > 12 else 'L'  # Col M (13th)
+
+            if english_name:
+                product_map[english_name] = {'unit': unit, 'package_size': package_size}
+            if thai_name:
+                product_map[thai_name] = {'unit': unit, 'package_size': package_size}
 
         # Append rows to Formulations sheet
         rows_to_append = []
@@ -980,8 +1066,19 @@ def save_formula():
             thai_name = chem.get('thaiName')
             amount = chem.get('amount')
             unit = chem.get('unit')
+
             if not thai_name or amount is None or not unit:
                 return jsonify({'error': 'Missing chemical details'}), 400
+
+            # --- Normalize amount if user provided Bottle/Bag/Tablet ---
+            if thai_name in product_map:
+                info = product_map[thai_name]
+                base_unit = info['unit']
+                package_size = info['package_size']
+
+                if unit in ['Bottle', 'Bag', 'Tablet']:
+                    amount = amount * package_size
+                    unit = base_unit  # normalize to base unit
 
             row = [
                 formula_id, '', thai_name, amount, unit, '', '', water_volume if water_volume is not None else ''
@@ -1031,6 +1128,89 @@ def save_formula():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route("/api/normalize-amount", methods=["POST"])
+def normalize_amount():
+    """
+    Converts '1 bag', '1 bottle', '1 tablet' etc. into base units (kg or L),
+    automatically checking both Fertilizer and Pesticide sheets.
+    Expects JSON: { "name": "Urea", "amount": "1 bag" }
+    """
+    try:
+        data = request.json
+        chem_name = data.get("name", "").strip()
+        raw_amount = str(data.get("amount", "")).lower().strip()
+
+        if not chem_name or not raw_amount:
+            return jsonify({"error": "Missing chemical name or amount"}), 400
+
+        # Sheets to check in order
+        sheets_to_check = [
+            {"range": "Fertilizers!A:Z", "package_idx": 17, "unit_idx": 18},  # Col R/S
+            {"range": "Pesticide/Herbicide/Fungicide!A:Z", "package_idx": 11, "unit_idx": 12},  # Col L/M
+        ]
+
+        record = None
+        package_size = 0
+        unit_type = ""
+
+        # Try to find chemical in either sheet
+        for sheet_info in sheets_to_check:
+            result = sheet.values().get(
+                spreadsheetId=CHEMICALS_SHEET_ID,
+                range=sheet_info["range"]
+            ).execute()
+            values = result.get("values", [])
+            if not values or len(values) < 2:
+                continue  # skip empty sheet
+
+            rows = values[1:]
+            for row in rows:
+                english_name = row[0].strip().lower() if len(row) > 0 else ""
+                thai_name = row[1].strip().lower() if len(row) > 1 else ""
+                if chem_name.lower() in [english_name, thai_name]:
+                    record = row
+                    # read package + unit
+                    try:
+                        package_size = float(row[sheet_info["package_idx"]]) if len(row) > sheet_info["package_idx"] else 0
+                    except:
+                        package_size = 0
+                    unit_type = row[sheet_info["unit_idx"]].lower() if len(row) > sheet_info["unit_idx"] else ""
+                    break
+            if record:
+                break  # found chemical
+
+        if not record:
+            return jsonify({"error": f"Chemical '{chem_name}' not found"}), 404
+
+        # parse user input
+        if any(x in raw_amount for x in ["bag", "bottle", "tablet"]):
+            try:
+                number = float(raw_amount.split()[0])
+            except:
+                return jsonify({"error": f"Invalid amount format: {raw_amount}"}), 400
+
+            normalized_value = number * package_size
+            return jsonify({
+                "normalizedAmount": normalized_value,
+                "unitType": unit_type,
+                "note": f"Converted {raw_amount} into {normalized_value} {unit_type}"
+            })
+        else:
+            # assume input already in base unit
+            parts = raw_amount.split()
+            if len(parts) == 2:
+                number, unit = parts
+                return jsonify({
+                    "normalizedAmount": float(number),
+                    "unitType": unit
+                })
+            else:
+                return jsonify({"error": f"Unrecognized format: {raw_amount}"}), 400
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/save-soil-test', methods=['POST'])
 def save_soil_test():

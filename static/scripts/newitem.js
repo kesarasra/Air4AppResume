@@ -168,15 +168,53 @@ document.addEventListener('DOMContentLoaded', () => {
       const chemicals = [];
       for (const row of chemicalRows) {
         const chemicalName = row.querySelector('select[name="chemicalName"]').value.trim();
-        const amount = parseFloat(row.querySelector('input[name="amount"]').value);
+        const amountInput = parseFloat(row.querySelector('input[name="amount"]').value);
         const unit = row.querySelector('select[name="unit"]').value;
 
-        if (!chemicalName || isNaN(amount) || !unit) {
-          alert('กรุณากรอกข้อมูลสารเคมีให้ครบถ้วนและถูกต้อง');
-          return;
+        if (!chemicalName || !amountInput || !unit) {
+        alert('กรุณากรอกข้อมูลสารเคมีให้ครบถ้วนและถูกต้อง');
+        return;
+      }
+
+      const amount = parseFloat(amountInput);
+      if (isNaN(amount)) {
+        alert(`ปริมาณสำหรับ ${chemicalName} ไม่ถูกต้อง`);
+        return;
+      }
+
+      let normalizedAmount = amount;
+      let normalizedUnit = unit;
+
+        if (["Bottle", "Bag", "Tablet"].includes(unit)) {
+          try {
+            const resp = await fetch("/api/normalize-amount", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                name: chemicalName,
+                amount: `${amount} ${unit}`
+              })
+            });
+            const norm = await resp.json();
+            if (!resp.ok || !norm.normalizedAmount || !norm.unitType) {
+              alert(`การแปลงหน่วยล้มเหลวสำหรับ ${chemicalName}: ${norm.error || 'ไม่ทราบสาเหตุ'}`);
+              return;
+            }
+
+            normalizedAmount = norm.normalizedAmount;
+            normalizedUnit = norm.unitType;
+
+          } catch (err) {
+            alert(`ข้อผิดพลาดเครือข่ายระหว่างแปลงหน่วย: ${err.message}`);
+            return;
+          }
         }
 
-        chemicals.push({ thaiName: chemicalName, amount, unit });
+        chemicals.push({
+          thaiName: chemicalName,
+          amount: normalizedAmount,
+          unit: normalizedUnit
+        });
       }
 
       const formulaId = formulaIdInput.value.trim();
