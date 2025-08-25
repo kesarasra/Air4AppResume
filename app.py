@@ -1015,6 +1015,7 @@ def admin_view_log():
 @app.route('/api/save-formula', methods=['POST'])
 def save_formula():
     data = request.get_json()
+    print("Received payload:", data)
 
     # Basic validation
     formula_id = data.get('formulaId')
@@ -1044,55 +1045,90 @@ def save_formula():
             thai_name = row[1].strip() if len(row) > 1 else english_name
             package_size = float(row[17]) if len(row) > 17 and row[17] else 1  # Col R (18th)
             unit = row[18] if len(row) > 18 else 'kg'  # Col S (19th)
+            tablets_per_box = int(row[19]) if len(row) > 19 and row[19] else 0  # Col T
 
-            if english_name:
-                product_map[english_name] = {'unit': unit, 'package_size': package_size}
-            if thai_name:
-                product_map[thai_name] = {'unit': unit, 'package_size': package_size}
+            # always include 'english' key
+            product_map[english_name or thai_name] = {
+                'english': english_name or '', 
+                'unit': unit, 
+                'package_size': package_size,
+                'tablets_per_box': tablets_per_box
+            }
+            product_map[thai_name] = {
+                'english': english_name or '', 
+                'unit': unit, 
+                'package_size': package_size,
+                'tablets_per_box': tablets_per_box
+            }
 
         for row in pesticide_info[1:]:  # skip header
-            name = row[0]
+            english_name = row[0].strip() if len(row) > 0 else ''
+            thai_name = row[1].strip() if len(row) > 1 else english_name
             package_size = float(row[11]) if len(row) > 11 and row[11] else 1  # Col L (12th)
             unit = row[12] if len(row) > 12 else 'L'  # Col M (13th)
+            tablets_per_box = int(row[13]) if len(row) > 13 and row[13] else 0  # Col N
 
-            if english_name:
-                product_map[english_name] = {'unit': unit, 'package_size': package_size}
-            if thai_name:
-                product_map[thai_name] = {'unit': unit, 'package_size': package_size}
+            # always include 'english' key
+            product_map[english_name or thai_name] = {
+                'english': english_name or '', 
+                'unit': unit, 
+                'package_size': package_size,
+                'tablets_per_box': tablets_per_box
+            }
+            product_map[thai_name] = {
+                'english': english_name or '', 
+                'unit': unit, 
+                'package_size': package_size,
+                'tablets_per_box': tablets_per_box
+            }
 
         # Append rows to Formulations sheet
         rows_to_append = []
+        skipped_rows = []
         for chem in chemicals:
             thai_name = chem.get('thaiName')
             amount = chem.get('amount')
             unit = chem.get('unit')
 
             if not thai_name or amount is None or not unit:
-                return jsonify({'error': 'Missing chemical details'}), 400
-
+                skipped_rows.append(chem)
+                continue  # Skip bad rows without breaking everything
+            
+            # --- Get English name from product_map if available ---
+            english_name = product_map[thai_name]['english'] if thai_name in product_map else ''
             # --- Normalize amount if user provided Bottle/Bag/Tablet ---
             if thai_name in product_map:
                 info = product_map[thai_name]
                 base_unit = info['unit']
                 package_size = info['package_size']
+                tablets_per_box = info.get('tablets_per_box', 0)
 
                 if unit in ['Bottle', 'Bag', 'Tablet']:
-                    amount = amount * package_size
+                    if unit.lower() == 'tablet' and tablets_per_box > 0:
+                        amount = amount * (package_size / tablets_per_box)
+                    else:
+                        amount = amount * package_size
                     unit = base_unit  # normalize to base unit
 
             row = [
-                formula_id, '', thai_name, amount, unit, '', '', water_volume if water_volume is not None else ''
+                formula_id, english_name, thai_name, amount, unit, '', '', water_volume if water_volume is not None else ''
             ]
             rows_to_append.append(row)
 
+        print("Rows to append to Formulations:", rows_to_append)
+        if skipped_rows:
+            print("Skipped invalid chemicals:", skipped_rows)
+
         # Append to Formulations
-        sheet.values().append(
-            spreadsheetId=CHEMICALS_SHEET_ID,
-            range='Formulations!A:H',
-            valueInputOption='USER_ENTERED',
-            insertDataOption='INSERT_ROWS',
-            body={'values': rows_to_append}
-        ).execute()
+        if rows_to_append:
+            response = sheet.values().append(
+                spreadsheetId=CHEMICALS_SHEET_ID,
+                range='Formulations!A:H',
+                valueInputOption='USER_ENTERED',
+                insertDataOption='INSERT_ROWS',
+                body={'values': rows_to_append}
+            ).execute()
+            print("Append response:", response)
 
         # Read existing metadata
         result = sheet.values().get(
@@ -1127,6 +1163,7 @@ def save_formula():
         return jsonify({'status': 'success', 'formulaId': formula_id})
 
     except Exception as e:
+        print("Error in save_formula:", str(e))
         return jsonify({'error': str(e)}), 500
 
 @app.route("/api/normalize-amount", methods=["POST"])
@@ -1146,15 +1183,13 @@ def normalize_amount():
 
         # Sheets to check in order
         sheets_to_check = [
-            {"range": "Fertilizers!A:Z", "package_idx": 17, "unit_idx": 18},  # Col R/S
-            {"range": "Pesticide/Herbicide/Fungicide!A:Z", "package_idx": 11, "unit_idx": 12},  # Col L/M
+            {"range": "Fertilizers!A:Z", "package_idx": 17, "unit_idx": 18, "tablets_idx": 19},  # Col R/S/T
+            {"range": "Pesticide/Herbicide/Fungicide!A:Z", "package_idx": 11, "unit_idx": 12, "tablets_idx": 13},  # Col L/M/N
         ]
 
-        record = None
-        package_size = 0
-        unit_type = ""
+        product_map = {}
 
-        # Try to find chemical in either sheet
+        # Build product map
         for sheet_info in sheets_to_check:
             result = sheet.values().get(
                 spreadsheetId=CHEMICALS_SHEET_ID,
@@ -1162,51 +1197,57 @@ def normalize_amount():
             ).execute()
             values = result.get("values", [])
             if not values or len(values) < 2:
-                continue  # skip empty sheet
+                continue
 
-            rows = values[1:]
-            for row in rows:
-                english_name = row[0].strip().lower() if len(row) > 0 else ""
-                thai_name = row[1].strip().lower() if len(row) > 1 else ""
-                if chem_name.lower() in [english_name, thai_name]:
-                    record = row
-                    # read package + unit
-                    try:
-                        package_size = float(row[sheet_info["package_idx"]]) if len(row) > sheet_info["package_idx"] else 0
-                    except:
-                        package_size = 0
-                    unit_type = row[sheet_info["unit_idx"]].lower() if len(row) > sheet_info["unit_idx"] else ""
-                    break
-            if record:
-                break  # found chemical
+            for row in values[1:]:
+                english_name = row[0].strip() if len(row) > 0 else ''
+                thai_name = row[1].strip() if len(row) > 1 else english_name
+                try:
+                    package_size = float(row[sheet_info["package_idx"]]) if len(row) > sheet_info["package_idx"] else 1
+                except:
+                    package_size = 1
+                unit = row[sheet_info["unit_idx"]] if len(row) > sheet_info["unit_idx"] else 'kg'
+                try:
+                    tablets_per_box = int(row[sheet_info["tablets_idx"]]) if len(row) > sheet_info["tablets_idx"] else 0
+                except:
+                    tablets_per_box = 0
 
-        if not record:
+                product_map[thai_name.lower()] = {
+                    'english': english_name,
+                    'unit': unit,
+                    'package_size': package_size,
+                    'tablets_per_box': tablets_per_box
+                }
+                if english_name:
+                    product_map[english_name.lower()] = {
+                        'english': english_name,
+                        'unit': unit,
+                        'package_size': package_size,
+                        'tablets_per_box': tablets_per_box
+                    }
+
+        key = chem_name.lower()
+        if key not in product_map:
             return jsonify({"error": f"Chemical '{chem_name}' not found"}), 404
 
         # parse user input
-        if any(x in raw_amount for x in ["bag", "bottle", "tablet"]):
-            try:
-                number = float(raw_amount.split()[0])
-            except:
-                return jsonify({"error": f"Invalid amount format: {raw_amount}"}), 400
+        try:
+            number = float(raw_amount.split()[0])
+        except:
+            return jsonify({"error": f"Invalid amount format: {raw_amount}"}), 400
 
-            normalized_value = number * package_size
-            return jsonify({
-                "normalizedAmount": normalized_value,
-                "unitType": unit_type,
-                "note": f"Converted {raw_amount} into {normalized_value} {unit_type}"
-            })
+        if "tablet" in raw_amount and product_map[key]['tablets_per_box'] > 0:
+            normalized_value = number * (product_map[key]['package_size'] / product_map[key]['tablets_per_box'])
         else:
-            # assume input already in base unit
-            parts = raw_amount.split()
-            if len(parts) == 2:
-                number, unit = parts
-                return jsonify({
-                    "normalizedAmount": float(number),
-                    "unitType": unit
-                })
-            else:
-                return jsonify({"error": f"Unrecognized format: {raw_amount}"}), 400
+            normalized_value = number * product_map[key]['package_size']
+
+        unit_type = product_map[key]['unit']
+
+        return jsonify({
+            "normalizedAmount": normalized_value,
+            "unitType": unit_type,
+            "note": f"Converted {raw_amount} into {normalized_value} {unit_type}"
+        })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
