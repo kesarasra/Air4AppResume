@@ -497,7 +497,8 @@ def submit_log():
 
         used_idx = inv_idx.get("total quantity used")
         name_idx = inv_idx.get("product name")
-        if used_idx is None or name_idx is None:
+        unit_idx = inv_idx.get("unit")
+        if used_idx is None or name_idx is None or unit_idx is None:
             print("⚠️ Inventory sheet missing required columns.")
             return
         
@@ -529,18 +530,37 @@ def submit_log():
                 lookup_name = normalize_name(product)
                 if lookup_name in inv_map:
                     row_number = inv_map[lookup_name]
-                    current_used = float(inv_rows[row_number - 2][used_idx].strip() or 0)
+
+                    # Pull values from the row
+                    current_used_val = inv_rows[row_number - 2][used_idx].strip() or "0"
+                    current_unit = inv_rows[row_number - 2][unit_idx].strip() or ""
+
+                    # Convert numeric part safely
+                    try:
+                        current_used = float(current_used_val.split()[0])
+                    except ValueError:
+                        current_used = 0
+
+                    # Add new usage
                     new_total = current_used + usage
+
+                    # Keep unit
+                    unit = current_unit if current_unit else ""
+
+                    # Build display value (e.g., "12.5 kg")
+                    display_value = f"{new_total} {unit}".strip()
+
                     col_letter = chr(65 + used_idx)
 
-                    print(f"✅ Updating '{product}' (row {row_number}): {current_used} + {usage} = {new_total}")
+                    print(f"✅ Updating '{product}' (row {row_number}): {current_used} + {usage} = {display_value}")
 
                     sheet_service.values().update(
                         spreadsheetId=CHEMICALS_SHEET_ID,
                         range=f"{INVENTORY}!{col_letter}{row_number}",
                         valueInputOption="RAW",
-                        body={"values": [[new_total]]}
+                        body={"values": [[display_value]]}
                     ).execute()
+
                 else:
                     print(f"⚠️ Product '{product}' not found in Inventory sheet.")
 
