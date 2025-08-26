@@ -20,7 +20,18 @@ async function loadInventory() {
             "Min Threshold"
         ].forEach(key => {
             const td = document.createElement("td");
-            td.textContent = item[key] || "";
+
+            // Default value
+            let value = item[key] || "";
+            let color = "#222"; // default background
+
+            // If your API includes a separate color property
+            if (item[`${key}_color`]) {
+                color = item[`${key}_color`];
+            }
+
+            td.textContent = value;
+            td.style.backgroundColor = color;
             tr.appendChild(td);
         });
 

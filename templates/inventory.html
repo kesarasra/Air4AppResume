@@ -6,17 +6,33 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon.png">
     <style>
         .table-container {
-            overflow-x: auto;
-            max-width: 100%;
+            width: 100vw;           /* full viewport width */
+            max-width: 100%;        /* prevent overflow */
             margin-top: 20px;
-            max-height: 70vh;
+            max-height: 70vh;       /* optional vertical limit */
+            overflow-x: auto;
             overflow-y: auto;
+            box-sizing: border-box; /* include padding in width */
+            padding: 0 10px;        /* optional: some side padding */
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             color: white;
+            table-layout: auto;  /* allow columns to size automatically */
+            min-width: 800px;    /* avoid extreme squish */
+        }
+
+        th, td {
+            text-align: left;
+            padding: 4px 4px;
+            border: 1px solid #ccc;
+            font-family: Arial, sans-serif;
+            white-space: normal;            /* allow wrapping */
+            word-wrap: break-word;          /* break long words */
+            overflow-wrap: break-word;      /* break long words for compatibility */
+            line-height: 1.2;            /* slightly tighter spacing */
         }
 
         .table-container table thead th {
@@ -27,18 +43,10 @@
             border-bottom: 2px solid #ccc;
         }
 
-        th, td {
-            padding: 8px 12px;
-            border: 1px solid #ccc;
-            font-family: Arial, sans-serif;
-        }
-
         td {
             background-color: #222;
-        }
-
-        th:hover {
-            background-color: #444;
+            padding: 4px 8px !important;
+            line-height: 1.2 !important;
         }
 
         .button {
@@ -53,6 +61,14 @@
         .button:hover {
             background-color: #67abeb;
         }
+
+        @media (max-width: 1024px) {
+            table, th, td {
+                font-size: 12px;
+                padding: 4px 8px;
+            }
+        }
+
     </style>
 </head>
 <body>
