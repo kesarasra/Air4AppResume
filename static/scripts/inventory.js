@@ -25,18 +25,19 @@ async function loadInventory() {
             tr.appendChild(td);
         });
 
-        // Actions column
+        // --- Actions column ---
         const actionTd = document.createElement("td");
+        actionTd.setAttribute("data-key", "Actions");
+        actionTd.classList.add("action-buttons");
 
-        // Reset usage button (row-level)
+        // Reset usage button
         const resetBtn = document.createElement("button");
-        resetBtn.textContent = "Reset Usage";
+        resetBtn.textContent = "รีเซ็ตการใช้งาน";
         resetBtn.className = "button";
         resetBtn.onclick = async () => {
             await fetch(`/api/inventory/reset/${encodeURIComponent(item["Product Name"])}`, {
                 method: "POST"
             });
-            // Update only the usage columns in table
             const packagesUsedTd = tr.querySelector("td[data-key='Total Packages Used']");
             const quantityUsedTd = tr.querySelector("td[data-key='Total Quantity Used']");
             if (packagesUsedTd) packagesUsedTd.textContent = "0";
@@ -44,12 +45,10 @@ async function loadInventory() {
         };
         actionTd.appendChild(resetBtn);
 
-        // Add stock button
+        // Add Packages button
         const addBtn = document.createElement("button");
-        addBtn.textContent = "Add Packages";   // clearer label
+        addBtn.textContent = "เพิ่มจำนวนแพ็กเกจ";
         addBtn.className = "button";
-        addBtn.style.marginLeft = "5px";
-
         addBtn.onclick = async () => {
             const qty = prompt("Enter number of packages to add:");
             if (!qty || isNaN(qty)) return alert("Invalid number");
@@ -58,16 +57,11 @@ async function loadInventory() {
             const res = await fetch("/api/inventory/add", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    product: item["Product Name"],
-                    amount: amount
-                })
+                body: JSON.stringify({ product: item["Product Name"], amount })
             });
-
             const result = await res.json();
             if (result.status !== "success") return alert(result.message || "Error updating inventory");
 
-            // --- Update table cells locally ---
             const packagesTd = tr.querySelector("td[data-key='Total Packages Stocked']");
             const sizeTd = tr.querySelector("td[data-key='Package Size Per']");
             const unitTd = tr.querySelector("td[data-key='Scientific Unit Type']");
@@ -83,6 +77,37 @@ async function loadInventory() {
         };
         actionTd.appendChild(addBtn);
 
+        // Delete Packages button
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "ลบจำนวนแพ็กเกจ";
+        delBtn.className = "button";
+        delBtn.onclick = async () => {
+            const qty = prompt("Enter number of packages to delete:");
+            if (!qty || isNaN(qty)) return alert("Invalid number");
+            const amount = parseFloat(qty);
+
+            const res = await fetch("/api/inventory/delete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ product: item["Product Name"], amount })
+            });
+            const result = await res.json();
+            if (result.status !== "success") return alert(result.message || "Error updating inventory");
+
+            const packagesTd = tr.querySelector("td[data-key='Total Packages Stocked']");
+            const sizeTd = tr.querySelector("td[data-key='Package Size Per']");
+            const unitTd = tr.querySelector("td[data-key='Scientific Unit Type']");
+            const quantityTd = tr.querySelector("td[data-key='Total Quantity Stocked']");
+
+            const currentPackages = parseFloat(packagesTd.textContent) || 0;
+            const packageSize = parseFloat(sizeTd.textContent) || 0;
+            const unit = unitTd ? unitTd.textContent : "";
+
+            const newPackages = Math.max(0, currentPackages - amount);
+            packagesTd.textContent = newPackages;
+            quantityTd.textContent = `${(newPackages * packageSize).toFixed(2)} ${unit}`.trim();
+        };
+        actionTd.appendChild(delBtn);
 
         tr.appendChild(actionTd);
         tbody.appendChild(tr);

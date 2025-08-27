@@ -1585,6 +1585,85 @@ def add_stock():
 
     return jsonify({"status": "success", "message": "New product added with packages & quantity"})
 
+@app.route("/api/inventory/delete", methods=["POST"])
+def delete_stock():
+    data = request.json or {}
+    product = data.get("product")
+    try:
+        amount = float(data.get("amount", 0))
+    except (TypeError, ValueError):
+        return jsonify({"status": "error", "message": "Invalid amount"}), 400
+
+    if not product or amount <= 0:
+        return jsonify({"status": "error", "message": "Missing product or invalid amount"}), 400
+
+    # Fetch inventory sheet
+    result = sheet.values().get(
+        spreadsheetId=CHEMICALS_SHEET_ID,
+        range=INVENTORY_RANGE
+    ).execute()
+    values = result.get("values", [])
+    if not values:
+        return jsonify({"status": "error", "message": "No inventory found"}), 404
+
+    headers = values[0]
+    rows = values[1:]
+    header_idx = {h: i for i, h in enumerate(headers)}
+
+    product_idx = header_idx.get("Product Name")
+    packages_idx = header_idx.get("Total Packages Stocked")
+    size_idx = header_idx.get("Package Size Per")
+    quantity_idx = header_idx.get("Total Quantity Stocked")
+
+    if None in [product_idx, packages_idx, size_idx, quantity_idx]:
+        return jsonify({"status": "error", "message": "Required columns missing"}), 400
+
+    def parse_numeric(value):
+        try:
+            return float(str(value).split()[0])
+        except:
+            return 0.0
+
+    def _col_to_a1(idx):
+        div, mod = divmod(idx, 26)
+        if div > 0:
+            return chr(64 + div) + chr(65 + mod)
+        else:
+            return chr(65 + mod)
+
+    for i, row in enumerate(rows, start=2):
+        if len(row) <= max(product_idx, packages_idx, size_idx, quantity_idx):
+            row += [""] * (max(product_idx, packages_idx, size_idx, quantity_idx) - len(row) + 1)
+
+        if row[product_idx] == product:
+            current_packages = parse_numeric(row[packages_idx])
+            new_packages = max(0, current_packages - amount)  # prevent negative
+            row[packages_idx] = str(new_packages)
+
+            package_size = parse_numeric(row[size_idx])
+            row[quantity_idx] = str(new_packages * package_size)
+
+            # Update packages in sheet
+            sheet.values().update(
+                spreadsheetId=CHEMICALS_SHEET_ID,
+                range=f"Inventory!{_col_to_a1(packages_idx)}{i}",
+                valueInputOption="RAW",
+                body={"values": [[str(new_packages)]]}
+            ).execute()
+
+            # Update quantity in sheet
+            sheet.values().update(
+                spreadsheetId=CHEMICALS_SHEET_ID,
+                range=f"Inventory!{_col_to_a1(packages_idx)}{i}",
+                valueInputOption="RAW",
+                body={"values": [[str(new_packages * package_size)]]}
+            ).execute()
+
+            return jsonify({"status": "success", "message": "Packages deleted & quantity updated"})
+
+    return jsonify({"status": "error", "message": "Product not found"})
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
