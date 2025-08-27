@@ -1331,6 +1331,13 @@ def save_soil_test():
     
 @app.route("/api/inventory", methods=["GET"])
 def get_inventory():
+    if 'username' not in session:
+        return redirect('/login')
+
+    if session['username'] != 'admin':
+        return "Access denied", 403
+
+    # Fetch inventory data
     result = sheet.values().get(
         spreadsheetId=CHEMICALS_SHEET_ID,
         range=INVENTORY_RANGE
@@ -1338,15 +1345,19 @@ def get_inventory():
 
     values = result.get("values", [])
     if not values:
-        return jsonify([])
+        return jsonify({"headers": [], "rows": [], "header_colors": []})
 
     headers = values[0]
     rows = values[1:]
-    inventory = []
 
+    # Normalize rows
+    for i in range(len(rows)):
+        if len(rows[i]) < len(headers):
+            rows[i] += [""] * (len(headers) - len(rows[i]))
+
+    # Prepare inventory objects
+    inventory = []
     for row in rows:
-        if len(row) < len(headers):
-            row += [""] * (len(headers) - len(row))
         item = dict(zip(headers, row))
         try:
             stocked = float(item.get("Total Quantity Stocked", 0))
@@ -1356,8 +1367,36 @@ def get_inventory():
             item["Available"] = 0
         inventory.append(item)
 
-    return jsonify(inventory)
+    # Fetch header colors from the first row
+    try:
+        format_result = sheet.get(
+            spreadsheetId=CHEMICALS_SHEET_ID,
+            ranges=[INVENTORY_RANGE.split('!')[0] + "!1:1"],  # first row only
+            includeGridData=True
+        ).execute()
 
+        grid_data = format_result['sheets'][0]['data'][0]['rowData'][0]['values']
+        header_colors = []
+        for cell in grid_data:
+            color = cell.get('effectiveFormat', {}).get('backgroundColor', {})
+            r = int(color.get('red', 0) * 255)
+            g = int(color.get('green', 0) * 255)
+            b = int(color.get('blue', 0) * 255)
+            header_colors.append(f'rgb({r},{g},{b})')
+
+    except Exception as e:
+        print("Warning: Couldn't fetch header colors:", e)
+        header_colors = ['#333'] * len(headers)
+
+    # Fill missing colors if any
+    if len(header_colors) < len(headers):
+        header_colors += ['#333'] * (len(headers) - len(header_colors))
+
+    return jsonify({
+        "headers": headers,
+        "rows": inventory,
+        "header_colors": header_colors
+    })
 
 # ===== 2. USE INVENTORY =====
 @app.route("/api/inventory/use", methods=["POST"])
