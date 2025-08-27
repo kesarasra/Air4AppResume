@@ -497,7 +497,7 @@ def submit_log():
 
         used_idx = inv_idx.get("total quantity used")
         name_idx = inv_idx.get("product name")
-        unit_idx = inv_idx.get("unit")
+        unit_idx = inv_idx.get("scientific unit type")
         if used_idx is None or name_idx is None or unit_idx is None:
             print("⚠️ Inventory sheet missing required columns.")
             return
@@ -1534,6 +1534,8 @@ def add_stock():
     product = data.get("product")
     try:
         amount = float(data.get("amount", 0))
+        package_size_input = float(data.get("package_size", 0))
+        unit_input = data.get("unit", "")
     except (TypeError, ValueError):
         return jsonify({"status": "error", "message": "Invalid amount"}), 400
 
@@ -1557,9 +1559,13 @@ def add_stock():
     packages_idx = header_idx.get("Total Packages Stocked")
     size_idx = header_idx.get("Package Size Per")
     quantity_idx = header_idx.get("Total Quantity Stocked")
-    unit_idx = header_idx.get("Scientific Unit Type") 
+    remaining_packages_idx = header_idx.get("Total Packages Remaining")
+    remaining_quantity_idx = header_idx.get("Total Quantity Remaining")
+    unit_idx = header_idx.get("Scientific Unit Type")
+    used_packages_idx = header_idx.get("Total Packages Used")
+    used_quantity_idx = header_idx.get("Total Quantity Used")
 
-    if None in [product_idx, packages_idx, size_idx, quantity_idx]:
+    if None in [product_idx, packages_idx, size_idx, quantity_idx, remaining_packages_idx, remaining_quantity_idx]:
         return jsonify({"status": "error", "message": "Required columns missing"}), 400
 
     def parse_numeric(value):
@@ -1576,44 +1582,62 @@ def add_stock():
         else:
             return chr(65 + mod)
 
+    # Round helper
+    def fmt(v):
+        return round(v, 2)
+
     for i, row in enumerate(rows, start=2):
-        if len(row) <= max(product_idx, packages_idx, size_idx, quantity_idx):
-            row += [""] * (max(product_idx, packages_idx, size_idx, quantity_idx) - len(row) + 1)
+        if len(row) <= max(product_idx, packages_idx, size_idx, quantity_idx, remaining_packages_idx, remaining_quantity_idx):
+            row += [""] * (max(product_idx, packages_idx, size_idx, quantity_idx, remaining_packages_idx, remaining_quantity_idx) - len(row) + 1)
 
         if row[product_idx] == product:
             current_packages = parse_numeric(row[packages_idx])
-            new_packages = current_packages + amount
+            new_packages = fmt(current_packages + amount)
             row[packages_idx] = str(new_packages)
 
-            # Calculate Total Quantity Stocked
+            # Determine package size and unit
             package_size = parse_numeric(row[size_idx])
-            unit = row[unit_idx] if unit_idx is not None else ""
-            row[quantity_idx] = f"{new_packages * package_size} {unit}".strip()
+            unit = row[unit_idx] if unit_idx is not None and row[unit_idx] else ""
+            total_quantity = fmt(new_packages * package_size)
+            row[quantity_idx] = f"{total_quantity} {unit}".strip()
+            # Keep used amounts
+            total_packages_used = parse_numeric(row[used_packages_idx]) if used_packages_idx is not None else 0
+            total_quantity_used = parse_numeric(row[used_quantity_idx]) if used_quantity_idx is not None else 0
 
-            # Update row in sheet
-            sheet.values().update(
-                spreadsheetId=CHEMICALS_SHEET_ID,
-                range=f"Inventory!{_col_to_a1(packages_idx)}{i}",
-                valueInputOption="RAW",
-                body={"values": [[str(new_packages)]]}
-            ).execute()
+            # Remaining = Stocked − Used
+            row[remaining_packages_idx] = fmt(new_packages - total_packages_used)
+            row[remaining_quantity_idx] = f"{fmt(total_quantity - total_quantity_used)} {unit}".strip()
 
-            sheet.values().update(
-                spreadsheetId=CHEMICALS_SHEET_ID,
-                range=f"Inventory!{_col_to_a1(quantity_idx)}{i}",
-                valueInputOption="RAW",
-                body={"values": [[row[quantity_idx]]]}
-            ).execute()
+
+            # Update all affected cells
+            updates = [
+                (packages_idx, new_packages),
+                (quantity_idx, row[quantity_idx]),
+                (remaining_packages_idx, row[remaining_packages_idx]),
+                (remaining_quantity_idx, row[remaining_quantity_idx])
+            ]
+
+            for idx, val in updates:
+                sheet.values().update(
+                    spreadsheetId=CHEMICALS_SHEET_ID,
+                    range=f"Inventory!{_col_to_a1(idx)}{i}",
+                    valueInputOption="RAW",
+                    body={"values": [[str(val)]]}
+                ).execute()
 
             return jsonify({"status": "success", "message": "Packages & quantity updated"})
-
-    # If product not found → append new row
+        
+    # Append new product if not found
     new_row = [""] * len(headers)
     new_row[product_idx] = product
-    new_row[packages_idx] = str(amount)
-    package_size = parse_numeric(new_row[size_idx])
-    unit = new_row[unit_idx] if unit_idx is not None else ""
-    new_row[quantity_idx] = f"{amount * package_size} {unit}".strip()
+    new_row[packages_idx] = fmt(amount)
+    new_row[size_idx] = fmt(package_size_input)
+    if unit_idx is not None:
+        new_row[unit_idx] = unit_input
+    total_quantity = fmt(amount * package_size_input)
+    new_row[quantity_idx] = f"{total_quantity} {unit_input}".strip()
+    new_row[remaining_packages_idx] = fmt(amount)
+    new_row[remaining_quantity_idx] = f"{total_quantity} {unit_input}".strip()
 
     sheet.values().append(
         spreadsheetId=CHEMICALS_SHEET_ID,
@@ -1653,8 +1677,11 @@ def delete_stock():
     packages_idx = header_idx.get("Total Packages Stocked")
     size_idx = header_idx.get("Package Size Per")
     quantity_idx = header_idx.get("Total Quantity Stocked")
+    remaining_packages_idx = header_idx.get("Total Packages Remaining")
+    remaining_quantity_idx = header_idx.get("Total Quantity Remaining")
+    unit_idx = header_idx.get("Scientific Unit Type")
 
-    if None in [product_idx, packages_idx, size_idx, quantity_idx]:
+    if None in [product_idx, packages_idx, size_idx, quantity_idx, remaining_packages_idx, remaining_quantity_idx]:
         return jsonify({"status": "error", "message": "Required columns missing"}), 400
 
     def parse_numeric(value):
@@ -1671,8 +1698,8 @@ def delete_stock():
             return chr(65 + mod)
 
     for i, row in enumerate(rows, start=2):
-        if len(row) <= max(product_idx, packages_idx, size_idx, quantity_idx):
-            row += [""] * (max(product_idx, packages_idx, size_idx, quantity_idx) - len(row) + 1)
+        if len(row) <= max(product_idx, packages_idx, size_idx, quantity_idx, remaining_packages_idx, remaining_quantity_idx):
+            row += [""] * (max(product_idx, packages_idx, size_idx, quantity_idx, remaining_packages_idx, remaining_quantity_idx) - len(row) + 1)
 
         if row[product_idx] == product:
             current_packages = parse_numeric(row[packages_idx])
@@ -1680,29 +1707,32 @@ def delete_stock():
             row[packages_idx] = str(new_packages)
 
             package_size = parse_numeric(row[size_idx])
-            row[quantity_idx] = str(new_packages * package_size)
+            unit = row[unit_idx] if unit_idx is not None and row[unit_idx] else ""
+            total_quantity = new_packages * package_size
+            row[quantity_idx] = f"{total_quantity} {unit}".strip()
+            total_packages_used = parse_numeric(row[header_idx.get("Total Packages Used", 0)])
+            total_quantity_used = parse_numeric(row[header_idx.get("Total Quantity Used", 0)])
 
-            # Update packages in sheet
-            sheet.values().update(
-                spreadsheetId=CHEMICALS_SHEET_ID,
-                range=f"Inventory!{_col_to_a1(packages_idx)}{i}",
-                valueInputOption="RAW",
-                body={"values": [[str(new_packages)]]}
-            ).execute()
+            row[remaining_packages_idx] = str(new_packages - total_packages_used)
+            row[remaining_quantity_idx] = f"{total_quantity - total_quantity_used} {unit}".strip()
 
-            # Update quantity in sheet
-            sheet.values().update(
-                spreadsheetId=CHEMICALS_SHEET_ID,
-                range=f"Inventory!{_col_to_a1(packages_idx)}{i}",
-                valueInputOption="RAW",
-                body={"values": [[str(new_packages * package_size)]]}
-            ).execute()
+            updates = [
+                (packages_idx, new_packages),
+                (quantity_idx, row[quantity_idx]),
+                (remaining_packages_idx, row[remaining_packages_idx]),
+                (remaining_quantity_idx, row[remaining_quantity_idx])
+            ]
+            for idx, val in updates:
+                sheet.values().update(
+                    spreadsheetId=CHEMICALS_SHEET_ID,
+                    range=f"Inventory!{_col_to_a1(idx)}{i}",
+                    valueInputOption="RAW",
+                    body={"values": [[str(val)]]}
+                ).execute()
 
             return jsonify({"status": "success", "message": "Packages deleted & quantity updated"})
 
     return jsonify({"status": "error", "message": "Product not found"})
-
-
 
 if __name__ == '__main__':
     app.run(debug=True)

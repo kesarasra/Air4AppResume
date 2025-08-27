@@ -32,6 +32,26 @@ async function loadInventory() {
         actionTh.style.color = "white";
         thead.appendChild(actionTh);
 
+        // Helper to update row quantities safely
+        const updateInventoryRow = (tr, newPackages) => {
+            const packagesTd = tr.querySelector("td[data-key='Total Packages Stocked']");
+            const quantityTd = tr.querySelector("td[data-key='Total Quantity Stocked']");
+            const remainingPackagesTd = tr.querySelector("td[data-key='Total Packages Remaining']");
+            const remainingQuantityTd = tr.querySelector("td[data-key='Total Quantity Remaining']");
+            const sizeTd = tr.querySelector("td[data-key='Package Size Per']");
+            const unitTd = tr.querySelector("td[data-key='Scientific Unit Type']");
+
+            const packageSize = parseFloat(sizeTd.textContent) || 0;
+            const unit = unitTd ? unitTd.textContent : "";
+
+            const newQuantity = (newPackages * packageSize).toFixed(2);
+
+            packagesTd.textContent = newPackages;
+            quantityTd.textContent = `${newQuantity} ${unit}`.trim();
+            remainingPackagesTd.textContent = newPackages;
+            remainingQuantityTd.textContent = `${newQuantity} ${unit}`.trim();
+        };
+
         // Build table rows
         items.forEach(item => {
             const tr = document.createElement("tr");
@@ -78,18 +98,8 @@ async function loadInventory() {
                 const result = await res.json();
                 if (result.status !== "success") return alert(result.message || "Error updating inventory");
 
-                const packagesTd = tr.querySelector("td[data-key='Total Packages Stocked']");
-                const sizeTd = tr.querySelector("td[data-key='Package Size Per']");
-                const unitTd = tr.querySelector("td[data-key='Scientific Unit Type']");
-                const quantityTd = tr.querySelector("td[data-key='Total Quantity Stocked']");
-
-                const currentPackages = parseFloat(packagesTd.textContent) || 0;
-                const packageSize = parseFloat(sizeTd.textContent) || 0;
-                const unit = unitTd ? unitTd.textContent : "";
-
-                const newPackages = currentPackages + amount;
-                packagesTd.textContent = newPackages;
-                quantityTd.textContent = `${(newPackages * packageSize).toFixed(2)} ${unit}`.trim();
+                const currentPackages = parseFloat(tr.querySelector("td[data-key='Total Packages Stocked']").textContent) || 0;
+                updateInventoryRow(tr, currentPackages + amount);
             };
             actionTd.appendChild(addBtn);
 
@@ -110,18 +120,8 @@ async function loadInventory() {
                 const result = await res.json();
                 if (result.status !== "success") return alert(result.message || "Error updating inventory");
 
-                const packagesTd = tr.querySelector("td[data-key='Total Packages Stocked']");
-                const sizeTd = tr.querySelector("td[data-key='Package Size Per']");
-                const unitTd = tr.querySelector("td[data-key='Scientific Unit Type']");
-                const quantityTd = tr.querySelector("td[data-key='Total Quantity Stocked']");
-
-                const currentPackages = parseFloat(packagesTd.textContent) || 0;
-                const packageSize = parseFloat(sizeTd.textContent) || 0;
-                const unit = unitTd ? unitTd.textContent : "";
-
-                const newPackages = Math.max(0, currentPackages - amount);
-                packagesTd.textContent = newPackages;
-                quantityTd.textContent = `${(newPackages * packageSize).toFixed(2)} ${unit}`.trim();
+                const currentPackages = parseFloat(tr.querySelector("td[data-key='Total Packages Stocked']").textContent) || 0;
+                updateInventoryRow(tr, Math.max(0, currentPackages - amount));
             };
             actionTd.appendChild(delBtn);
 
