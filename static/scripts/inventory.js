@@ -20,18 +20,8 @@ async function loadInventory() {
             "Min Threshold"
         ].forEach(key => {
             const td = document.createElement("td");
-
-            // Default value
-            let value = item[key] || "";
-            let color = "#222"; // default background
-
-            // If your API includes a separate color property
-            if (item[`${key}_color`]) {
-                color = item[`${key}_color`];
-            }
-
-            td.textContent = value;
-            td.style.backgroundColor = color;
+            td.setAttribute("data-key", key);
+            td.textContent = item[key] || "";
             tr.appendChild(td);
         });
 
@@ -46,31 +36,53 @@ async function loadInventory() {
             await fetch(`/api/inventory/reset/${encodeURIComponent(item["Product Name"])}`, {
                 method: "POST"
             });
-            loadInventory();
+            // Update only the usage columns in table
+            const packagesUsedTd = tr.querySelector("td[data-key='Total Packages Used']");
+            const quantityUsedTd = tr.querySelector("td[data-key='Total Quantity Used']");
+            if (packagesUsedTd) packagesUsedTd.textContent = "0";
+            if (quantityUsedTd) quantityUsedTd.textContent = "0";
         };
         actionTd.appendChild(resetBtn);
 
         // Add stock button
         const addBtn = document.createElement("button");
-        addBtn.textContent = "Add Stock";
+        addBtn.textContent = "Add Packages";   // clearer label
         addBtn.className = "button";
         addBtn.style.marginLeft = "5px";
+
         addBtn.onclick = async () => {
-            const qty = prompt("Enter quantity to add:");
+            const qty = prompt("Enter number of packages to add:");
             if (!qty || isNaN(qty)) return alert("Invalid number");
-            const unit = prompt("Enter unit (optional):") || "";
-            await fetch("/api/inventory/add", {
+            const amount = parseFloat(qty);
+
+            const res = await fetch("/api/inventory/add", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     product: item["Product Name"],
-                    amount: parseFloat(qty), // matches backend 'amount'
-                    unit: unit
+                    amount: amount
                 })
             });
-            loadInventory();
+
+            const result = await res.json();
+            if (result.status !== "success") return alert(result.message || "Error updating inventory");
+
+            // --- Update table cells locally ---
+            const packagesTd = tr.querySelector("td[data-key='Total Packages Stocked']");
+            const sizeTd = tr.querySelector("td[data-key='Package Size Per']");
+            const unitTd = tr.querySelector("td[data-key='Scientific Unit Type']");
+            const quantityTd = tr.querySelector("td[data-key='Total Quantity Stocked']");
+
+            const currentPackages = parseFloat(packagesTd.textContent) || 0;
+            const packageSize = parseFloat(sizeTd.textContent) || 0;
+            const unit = unitTd ? unitTd.textContent : "";
+
+            const newPackages = currentPackages + amount;
+            packagesTd.textContent = newPackages;
+            quantityTd.textContent = `${(newPackages * packageSize).toFixed(2)} ${unit}`.trim();
         };
         actionTd.appendChild(addBtn);
+
 
         tr.appendChild(actionTd);
         tbody.appendChild(tr);
@@ -83,7 +95,14 @@ document.getElementById("reset-btn").addEventListener("click", async () => {
     if (!confirmReset) return;
     await fetch("/api/inventory/reset", { method: "POST" });
     alert("All usage reset to zero!");
-    loadInventory();
+    
+    // Update table usage columns without reloading
+    document.querySelectorAll("#inventory-table tbody tr").forEach(tr => {
+        const packagesUsedTd = tr.querySelector("td[data-key='Total Packages Used']");
+        const quantityUsedTd = tr.querySelector("td[data-key='Total Quantity Used']");
+        if (packagesUsedTd) packagesUsedTd.textContent = "0";
+        if (quantityUsedTd) quantityUsedTd.textContent = "0";
+    });
 });
 
 // --- Load table on page ready ---

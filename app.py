@@ -1491,50 +1491,100 @@ def reset_usage_for_formula(formula_id):
 # ===== 4. ADD NEW STOCK =====
 @app.route("/api/inventory/add", methods=["POST"])
 def add_stock():
-    data = request.json
+    data = request.json or {}
     product = data.get("product")
-    amount = float(data.get("amount", 0))
-    unit = data.get("unit", "")
+    try:
+        amount = float(data.get("amount", 0))
+    except (TypeError, ValueError):
+        return jsonify({"status": "error", "message": "Invalid amount"}), 400
 
-    # Fetch inventory
+    if not product or amount <= 0:
+        return jsonify({"status": "error", "message": "Missing product or invalid amount"}), 400
+
+    # Fetch inventory sheet
     result = sheet.values().get(
         spreadsheetId=CHEMICALS_SHEET_ID,
         range=INVENTORY_RANGE
     ).execute()
-
     values = result.get("values", [])
+    if not values:
+        return jsonify({"status": "error", "message": "No inventory found"}), 404
+
     headers = values[0]
     rows = values[1:]
+    header_idx = {h: i for i, h in enumerate(headers)}
 
-    found = False
+    product_idx = header_idx.get("Product Name")
+    packages_idx = header_idx.get("Total Packages Stocked")
+    size_idx = header_idx.get("Package Size Per")
+    quantity_idx = header_idx.get("Total Quantity Stocked")
+    unit_idx = header_idx.get("Scientific Unit Type") 
+
+    if None in [product_idx, packages_idx, size_idx, quantity_idx]:
+        return jsonify({"status": "error", "message": "Required columns missing"}), 400
+
+    def parse_numeric(value):
+        try:
+            return float(str(value).split()[0])
+        except:
+            return 0.0
+        
+    # Helper to convert index to A1 column letter
+    def _col_to_a1(idx):
+        div, mod = divmod(idx, 26)
+        if div > 0:
+            return chr(64 + div) + chr(65 + mod)
+        else:
+            return chr(65 + mod)
+
     for i, row in enumerate(rows, start=2):
-        if row[0] == product:
-            stocked = float(row[1]) if len(row) > 1 else 0
-            row[1] = str(stocked + amount)
-            if unit:
-                if len(row) < 5:
-                    row += [""] * (5 - len(row))
-                row[4] = unit
+        if len(row) <= max(product_idx, packages_idx, size_idx, quantity_idx):
+            row += [""] * (max(product_idx, packages_idx, size_idx, quantity_idx) - len(row) + 1)
+
+        if row[product_idx] == product:
+            current_packages = parse_numeric(row[packages_idx])
+            new_packages = current_packages + amount
+            row[packages_idx] = str(new_packages)
+
+            # Calculate Total Quantity Stocked
+            package_size = parse_numeric(row[size_idx])
+            unit = row[unit_idx] if unit_idx is not None else ""
+            row[quantity_idx] = f"{new_packages * package_size} {unit}".strip()
+
+            # Update row in sheet
             sheet.values().update(
                 spreadsheetId=CHEMICALS_SHEET_ID,
-                range=f"Inventory!A{i}:U{i}",
+                range=f"Inventory!{_col_to_a1(packages_idx)}{i}",
                 valueInputOption="RAW",
-                body={"values": [row]}
+                body={"values": [[str(new_packages)]]}
             ).execute()
-            found = True
-            break
+
+            sheet.values().update(
+                spreadsheetId=CHEMICALS_SHEET_ID,
+                range=f"Inventory!{_col_to_a1(quantity_idx)}{i}",
+                valueInputOption="RAW",
+                body={"values": [[row[quantity_idx]]]}
+            ).execute()
+
+            return jsonify({"status": "success", "message": "Packages & quantity updated"})
 
     # If product not found → append new row
-    if not found:
-        new_row = [product, str(amount), "0", str(amount), unit]
-        sheet.values().append(
-            spreadsheetId=CHEMICALS_SHEET_ID,
-            range="Inventory!A:U",
-            valueInputOption="RAW",
-            body={"values": [new_row]}
-        ).execute()
+    new_row = [""] * len(headers)
+    new_row[product_idx] = product
+    new_row[packages_idx] = str(amount)
+    package_size = parse_numeric(new_row[size_idx])
+    unit = new_row[unit_idx] if unit_idx is not None else ""
+    new_row[quantity_idx] = f"{amount * package_size} {unit}".strip()
 
-    return jsonify({"status": "stock added"})
+    sheet.values().append(
+        spreadsheetId=CHEMICALS_SHEET_ID,
+        range="Inventory!A:U",
+        valueInputOption="RAW",
+        body={"values": [new_row]}
+    ).execute()
+
+    return jsonify({"status": "success", "message": "New product added with packages & quantity"})
+
 
 if __name__ == '__main__':
     app.run(debug=True)
