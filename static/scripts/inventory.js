@@ -36,20 +36,16 @@ async function loadInventory() {
         const updateInventoryRow = (tr, newPackages) => {
             const packagesTd = tr.querySelector("td[data-key='Total Packages Stocked']");
             const quantityTd = tr.querySelector("td[data-key='Total Quantity Stocked']");
-            const remainingPackagesTd = tr.querySelector("td[data-key='Total Packages Remaining']");
-            const remainingQuantityTd = tr.querySelector("td[data-key='Total Quantity Remaining']");
             const sizeTd = tr.querySelector("td[data-key='Package Size Per']");
             const unitTd = tr.querySelector("td[data-key='Scientific Unit Type']");
 
             const packageSize = parseFloat(sizeTd.textContent) || 0;
             const unit = unitTd ? unitTd.textContent : "";
 
-            const newQuantity = (newPackages * packageSize).toFixed(2);
+            const totalQuantity = (newPackages * packageSize).toFixed(2);
 
             packagesTd.textContent = newPackages;
-            quantityTd.textContent = `${newQuantity} ${unit}`.trim();
-            remainingPackagesTd.textContent = newPackages;
-            remainingQuantityTd.textContent = `${newQuantity} ${unit}`.trim();
+            quantityTd.textContent = `${totalQuantity} ${unit}`.trim();
         };
 
         // Build table rows

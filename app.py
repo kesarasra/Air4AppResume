@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify, send_from_directory, session, redirect, url_for, render_template_string, render_template
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-import os, json, uuid
+import os, json, uuid, re
+from pprint import pprint
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('APP_SECRET_KEY', 'default_secret_key')
@@ -359,214 +360,261 @@ def submit_log():
     def unique_preserve_order(seq):
         seen = set()
         return [x for x in seq if not (x in seen or seen.add(x))]
-
+    
     def update_inventory_from_formula(sheet_service, formula_id, formula_amount, unit=None):
-        def normalize_header(h):
-            if not h:
-                return ""
-            return h.strip().lower().replace('\xa0',' ').replace('(','').replace(')','')  # remove extra spaces, non-breaking spaces, parentheses
-        
-        def normalize_name(n):
-            if not n:
-                return ""
-            return n.strip().lower().replace('\xa0',' ').replace('(','').replace(')','')
+        """
+        Updates the INVENTORY sheet based on a formula applied by the worker.
+        formula_amount: numeric value applied by worker (kg, L, or bottles/bags/tablets)
+        unit: optional unit from form (kg, L, bottle, bag, tablet)
+        """
 
-        # --- Helper: get package size and base unit ---
+        def normalize(s):
+            if not s:
+                return ""
+            s = str(s).strip().lower()
+            s = s.replace('\xa0', ' ')
+            # remove all non-alphanumeric except space
+            s = re.sub(r'[^a-z0-9 ]', '', s)
+            # collapse multiple spaces
+            s = re.sub(r'\s+', ' ', s)
+            return s
+
+
+        def regex_number(val):
+            if not val:
+                return 0
+            m = re.search(r"[0-9.]+", str(val))
+            return float(m.group(0)) if m else 0
+
+        def colnum_to_a1(col):
+            result = ""
+            while col >= 0:
+                result = chr(col % 26 + 65) + result
+                col = col // 26 - 1
+            return result
+
         def get_package_size_and_unit(product_name):
-            product_name_norm = normalize_name(product_name)
+            product_name_norm = normalize(product_name)
 
-            # Fertilizers sheet
-            fert_data = sheet_service.values().get(
-                spreadsheetId=CHEMICALS_SHEET_ID,
-                range="Fertilizers!A1:S"
-            ).execute().get("values", [])
-            if fert_data and len(fert_data) > 1:
-                headers = [normalize_header(h) for h in fert_data[0]]
-                idx = {h: i for i, h in enumerate(headers)}
-                for row in fert_data[1:]:
-                    if len(row) > idx["product name"] and normalize_name(row[idx["product name"]]) == product_name_norm:
-                        package_size = row[idx.get("package size", idx.get("r", 0))] or 1
-                        base_unit = row[idx.get("unit", idx.get("s", 0))] or "kg"
-                        return float(package_size), base_unit.lower()
+            # --- Fertilizers sheet ---
+            try:
+                fert_data = sheet_service.values().get(
+                    spreadsheetId=CHEMICALS_SHEET_ID,
+                    range="Fertilizers!A1:S"
+                ).execute().get("values", [])
+                if fert_data and len(fert_data) > 1:
+                    headers = [normalize(h) for h in fert_data[0]]
+                    idx = {h:i for i,h in enumerate(headers)}
+                    pname_idx = idx.get("product name")
+                    if pname_idx is not None:
+                        for row in fert_data[1:]:
+                            if len(row) > pname_idx and normalize(row[pname_idx]) == product_name_norm:
+                                pkg_idx = idx.get("package size", idx.get("r", 0))
+                                unit_idx = idx.get("unit", idx.get("s", 0))
+                                package_size = regex_number(row[pkg_idx]) if len(row) > pkg_idx else 1
+                                base_unit = row[unit_idx] if len(row) > unit_idx else "kg"
+                                return package_size or 1, base_unit.lower()
+            except Exception as e:
+                print(f"⚠️ Error fetching Fertilizers data: {e}")
 
-            # Pesticide/Herbicide/Fungicide sheet
-            pest_data = sheet_service.values().get(
-                spreadsheetId=CHEMICALS_SHEET_ID,
-                range="Pesticide/Herbicide/Fungicide!A1:M"
-            ).execute().get("values", [])
-            if pest_data and len(pest_data) > 1:
-                headers = [normalize_header(h) for h in pest_data[0]]
-                idx = {h: i for i, h in enumerate(headers)}
-                for row in pest_data[1:]:
-                    if len(row) > idx["product name"] and normalize_name(row[idx["product name"]]) == product_name_norm:
-                        package_size = row[idx.get("package size", idx.get("l", 0))] or 1
-                        base_unit = row[idx.get("unit", idx.get("m", 0))] or "kg"
-                        return float(package_size), base_unit.lower()
+            # --- Pesticides sheet ---
+            try:
+                pest_data = sheet_service.values().get(
+                    spreadsheetId=CHEMICALS_SHEET_ID,
+                    range="Pesticide/Herbicide/Fungicide!A1:M"
+                ).execute().get("values", [])
+                if pest_data and len(pest_data) > 1:
+                    headers = [normalize(h) for h in pest_data[0]]
+                    idx = {h:i for i,h in enumerate(headers)}
+                    pname_idx = idx.get("product name")
+                    if pname_idx is not None:
+                        for row in pest_data[1:]:
+                            if len(row) > pname_idx and normalize(row[pname_idx]) == product_name_norm:
+                                pkg_idx = idx.get("package size", idx.get("l", 0))
+                                unit_idx = idx.get("unit", idx.get("m", 0))
+                                package_size = regex_number(row[pkg_idx]) if len(row) > pkg_idx else 1
+                                base_unit = row[unit_idx] if len(row) > unit_idx else "kg"
+                                return package_size or 1, base_unit.lower()
+            except Exception as e:
+                print(f"⚠️ Error fetching Pesticides data: {e}")
 
-            # Default fallback
+            # fallback
             return 1, "kg"
 
         # --- Fetch formulations ---
-        formulations_data = sheet_service.values().get(
-            spreadsheetId=CHEMICALS_SHEET_ID,
-            range=f"{FORMULATIONS}!A1:Z"
-        ).execute().get("values", [])
+        try:
+            form_data = sheet_service.values().get(
+                spreadsheetId=CHEMICALS_SHEET_ID,
+                range=f"{FORMULATIONS}!A1:Z"
+            ).execute().get("values", [])
+        except Exception as e:
+            print(f"❌ ERROR fetching formulations: {e}")
+            return
 
-        if not formulations_data or len(formulations_data) < 2:
+        if not form_data or len(form_data) < 2:
             print("⚠️ No formulations data found.")
             return
 
-        headers = [normalize_header(h) for h in formulations_data[0]]
-        rows = formulations_data[1:]
-        idx = {h: i for i, h in enumerate(headers)}
+        headers = [normalize(h) for h in form_data[0]]
+        idx = {h:i for i,h in enumerate(headers)}
+        rows = form_data[1:]
 
-        # Map required columns
-        required_columns = ["formula id", "product name", "amount", "unit", "water volume l"]
-        for col in required_columns:
+        required_cols = ["formula id","product name","amount","unit","water volume l"]
+        for col in required_cols:
             if col not in idx:
-                print(f"❌ ERROR: Required column '{col}' missing in formulations sheet")
+                print(f"❌ ERROR: Missing column '{col}' in formulations sheet")
                 return
 
-        # --- Find formula rows ---
+        # Get all chemicals in formula
         formula_rows = [r for r in rows if len(r) > idx["formula id"] and r[idx["formula id"]].strip() == formula_id]
         if not formula_rows:
-            print(f"⚠️ Formula {formula_id} not found in formulations sheet.")
+            print(f"⚠️ Formula {formula_id} not found")
             return
 
-        # --- Get total water volume ---
-        try:
-            total_volume = float(formula_rows[0][idx["water volume l"]].strip() or 0)
-        except Exception as e:
-            print(f"⚠️ Error reading Total Water Volume for formula {formula_id}: {e}")
-            return
-
+        # Total water volume of formula (assume same for all chemicals)
+        total_volume = regex_number(formula_rows[0][idx["water volume l"]])
         if total_volume <= 0:
-            print(f"⚠️ Total Water Volume is zero or invalid for formula {formula_id}")
-            return
-
-        # --- Calculate factor ---
-        try:
-            applied_amount = float(formula_amount)
-            # Normalize units
-            if unit:
-                u = unit.strip().lower()
-            else:
-                # fallback to formula's default unit
-                u = formula_rows[0][idx.get("unit","kg")].strip().lower() or "kg"
-
-            # Convert to liters or kilograms depending on context
-            if u in ["kg", "kilogram", "kilograms"]:
-                pass  # already kg
-            elif u in ["g", "gram", "grams"]:
-                applied_amount = applied_amount / 1000.0  # g → kg
-            elif u in ["l", "liter", "liters"]:
-                pass  # already liters
-            elif u in ["ml", "milliliter", "milliliters"]:
-                applied_amount = applied_amount / 1000.0  # mL → L
-            elif u in ["bottle", "bag", "tablet"]:
-                # Determine package size from Fertilizers or Pesticide sheet
-                try:
-                    # Example: lookup function you'll need to implement
-                    product = fr[idx["product name"]].strip()
-                    package_size, base_unit = get_package_size_and_unit(product)
-                    # Multiply by the number of bottles/bags/tablets
-                    applied_amount = applied_amount * float(package_size)
-                    u = base_unit  # override to kg or L
-                except Exception as e:
-                    print(f"⚠️ Failed to convert {product} {u} to base unit: {e}")
-                    return
-
-            factor = applied_amount / total_volume
-        except Exception as e:
-            print(f"⚠️ Error parsing applied amount {formula_amount} {unit}: {e}")
+            print(f"⚠️ Total water volume is zero for formula {formula_id}")
             return
 
         # --- Fetch inventory ---
-        inventory_data = sheet_service.values().get(
-            spreadsheetId=CHEMICALS_SHEET_ID,
-            range=f"{INVENTORY}!A1:U"
-        ).execute().get("values", [])
-
-        if not inventory_data or len(inventory_data) < 2:
-            print("⚠️ No inventory data found.")
+        try:
+            inv_data = sheet_service.values().get(
+                spreadsheetId=CHEMICALS_SHEET_ID,
+                range=f"{INVENTORY}!A1:U"
+            ).execute().get("values", [])
+        except Exception as e:
+            print(f"❌ ERROR fetching inventory: {e}")
             return
 
-        inv_headers = [normalize_header(h) for h in inventory_data[0]]
-        inv_rows = inventory_data[1:]
-        inv_idx = {h: i for i, h in enumerate(inv_headers)}
+        if not inv_data or len(inv_data) < 2:
+            print("⚠️ No inventory data found")
+            return
 
-        used_idx = inv_idx.get("total quantity used")
+        inv_headers = [normalize(h) for h in inv_data[0]]
+        print("Inventory headers (normalized):", inv_headers)
+        inv_idx = {h:i for i,h in enumerate(inv_headers)}
+        inv_rows = inv_data[1:]
+
+        # --- Column indexes (robust lookups, with sane fallbacks) ---
         name_idx = inv_idx.get("product name")
+        used_idx = inv_idx.get("total quantity used")
+        stock_idx = inv_idx.get("total quantity stocked")
+        packages_idx = inv_idx.get("total packages stocked")
+        packages_used_idx = inv_idx.get("total packages used")
         unit_idx = inv_idx.get("scientific unit type")
-        if used_idx is None or name_idx is None or unit_idx is None:
-            print("⚠️ Inventory sheet missing required columns.")
+        pkgsize_idx = inv_idx.get("package size per")
+        if pkgsize_idx is None:
+            # fallback to Col F (0-based index 5) if header mismatches
+            pkgsize_idx = 5
+
+        if name_idx is None:
+            print("❌ ERROR: 'product name' column missing in INVENTORY sheet")
+            pprint(inv_idx.keys())
             return
-        
-        # --- Build inventory mapping (Thai + English names) ---
+
+        # --- Build inventory mapping: product_name -> row number ---
         inv_map = {}
-        for i, row in enumerate(inv_rows, start=2):  # 1-indexed for Sheets
-            if len(row) <= max(name_idx, used_idx):
-                row += [''] * (max(name_idx, used_idx) - len(row) + 1)
-            inv_map[normalize_name(row[name_idx])] = i
 
-        # --- Update inventory ---
-        for fr in formula_rows:
+        for i, row in enumerate(inv_rows, start=2):
+            if len(row) <= name_idx:
+                row += [''] * (name_idx - len(row) + 1)
+            product_name_norm = normalize(row[name_idx])
+            if product_name_norm:
+                inv_map[product_name_norm] = i
+            print("✅ Inventory map keys (sample):", list(inv_map.keys())[:10])
+
+        # --- Update inventory for each chemical in formula ---
+        for frow in formula_rows:
             try:
-                product = fr[idx["product name"]].strip()
-                chem_amount = float(fr[idx["amount"]].strip() or 0)
-                product_unit = fr[idx.get("unit", "kg")].strip().lower()
+                chem_name = frow[idx["product name"]].strip()
+                chem_unit_from_formula = frow[idx.get("unit","")].strip().lower() if idx.get("unit") is not None and len(frow) > idx.get("unit") else ""
+                chem_amount = regex_number(frow[idx["amount"]])
 
-                # Normalize if needed
-                if product_unit in ["bottle", "bag", "tablet"]:
-                    package_size, base_unit = get_package_size_and_unit(product)
-                    chem_amount *= package_size
-                    product_unit = base_unit
-
-                # Factor = applied amount / total water volume
+                # Factor = user applied / formula water volume
                 applied_amount = float(formula_amount)
                 factor = applied_amount / total_volume
-                usage = chem_amount * factor
+                actual_used = chem_amount * factor
 
-                lookup_name = normalize_name(product)
-                if lookup_name in inv_map:
-                    row_number = inv_map[lookup_name]
+                chem_name_norm = normalize(chem_name)
 
-                    # Pull values from the row
-                    current_used_val = inv_rows[row_number - 2][used_idx].strip() or "0"
-                    current_unit = inv_rows[row_number - 2][unit_idx].strip() or ""
+                # Find inventory row
+                row_number = inv_map.get(chem_name_norm)
+                if row_number is None:
+                    print(f"⚠️ Chemical '{chem_name}' not found in inventory map keys")
+                    continue
 
-                    # Convert numeric part safely
-                    try:
-                        current_used = float(current_used_val.split()[0])
-                    except ValueError:
-                        current_used = 0
+                row_values = inv_rows[row_number - 2]
 
-                    # Add new usage
-                    new_total = current_used + usage
+                # ensure row_values long enough for indices we use
+                max_index = max(
+                    idx_val for idx_val in [
+                        used_idx, stock_idx, packages_idx, packages_used_idx, pkgsize_idx, unit_idx
+                    ] if idx_val is not None
+                )
+                if len(row_values) <= max_index:
+                    row_values += [''] * (max_index - len(row_values) + 1)
 
-                    # Keep unit
-                    unit = current_unit if current_unit else ""
+                # --- Existing quantities ---
+                current_used = regex_number(row_values[used_idx]) if used_idx is not None else 0.0
+                current_stocked = regex_number(row_values[stock_idx]) if stock_idx is not None else 0.0
+                current_packages_used = regex_number(row_values[packages_used_idx]) if packages_used_idx is not None else 0.0
+                current_packages_stocked = regex_number(row_values[packages_idx]) if packages_idx is not None else (current_stocked / (regex_number(row_values[pkgsize_idx]) or 1.0))
 
-                    # Build display value (e.g., "12.5 kg")
-                    display_value = f"{new_total} {unit}".strip()
+                # Get package size from INVENTORY row first; fallback to sheets lookup
+                package_size = 0.0
+                if pkgsize_idx is not None and len(row_values) > pkgsize_idx and str(row_values[pkgsize_idx]).strip() != "":
+                    package_size = regex_number(row_values[pkgsize_idx])
+                if not package_size or package_size <= 0:
+                    # fallback: try your other sheet lookups (fert/pest) - call your helper
+                    fallback_pkg, _ = get_package_size_and_unit(chem_name)
+                    package_size = fallback_pkg if fallback_pkg else 1.0
 
-                    col_letter = chr(65 + used_idx)
+                # Stepwise package update
+                additional_packages_used = actual_used / package_size if package_size else 0.0
+                new_packages_used = current_packages_used + additional_packages_used
+                new_packages_stocked = max(current_packages_stocked - additional_packages_used, 0.0)
 
-                    print(f"✅ Updating '{product}' (row {row_number}): {current_used} + {usage} = {display_value}")
+                # Quantity updates
+                new_used = current_used + actual_used
+                new_stocked = max(current_stocked - actual_used, 0.0)
 
-                    sheet_service.values().update(
-                        spreadsheetId=CHEMICALS_SHEET_ID,
-                        range=f"{INVENTORY}!{col_letter}{row_number}",
-                        valueInputOption="RAW",
-                        body={"values": [[display_value]]}
-                    ).execute()
-
+                # Choose display unit from the INVENTORY row if present, else from formula
+                display_unit = None
+                if unit_idx is not None and len(row_values) > unit_idx and str(row_values[unit_idx]).strip():
+                    display_unit = str(row_values[unit_idx]).strip()
                 else:
-                    print(f"⚠️ Product '{product}' not found in Inventory sheet.")
+                    display_unit = chem_unit_from_formula or "L"
+
+                # --- Update sheet ---
+                updates = [
+                (used_idx, f"{new_used:.2f} {display_unit}" if used_idx is not None else None),
+                (stock_idx, f"{new_stocked:.2f} {display_unit}" if stock_idx is not None else None),
+                (packages_idx, round(new_packages_stocked, 2) if packages_idx is not None else None),
+                (packages_used_idx, round(new_packages_used, 2) if packages_used_idx is not None else None),
+            ]
+
+                for col_idx, val in updates:
+                    if col_idx is not None:
+                        try:
+                            sheet_service.values().update(
+                                spreadsheetId=CHEMICALS_SHEET_ID,
+                                range=f"{INVENTORY}!{colnum_to_a1(col_idx)}{row_number}",
+                                valueInputOption="RAW",
+                                body={"values": [[val]]}
+                            ).execute()
+                        except Exception as e:
+                            print(f"⚠️ Failed to update '{chem_name}' at column {col_idx}: {e}")
+
+                print(
+                    f"✅ '{chem_name}' (pkg={package_size}): "
+                    f"QtyUsed={new_used:.2f}{display_unit}, QtyStocked={new_stocked:.2f}{display_unit}, "
+                    f"PkgsUsed={new_packages_used:.2f}, PkgsStocked={new_packages_stocked:.2f}"
+                )
 
             except Exception as e:
-                print(f"⚠️ Error updating inventory for product '{product}': {e}")
-
+                print(f"⚠️ Error updating inventory for '{chem_name}': {e}")
+                pprint(frow)
 
     phases, zones, lines, treeIDs = [], [], [], []
 
@@ -1559,13 +1607,11 @@ def add_stock():
     packages_idx = header_idx.get("Total Packages Stocked")
     size_idx = header_idx.get("Package Size Per")
     quantity_idx = header_idx.get("Total Quantity Stocked")
-    remaining_packages_idx = header_idx.get("Total Packages Remaining")
-    remaining_quantity_idx = header_idx.get("Total Quantity Remaining")
     unit_idx = header_idx.get("Scientific Unit Type")
     used_packages_idx = header_idx.get("Total Packages Used")
     used_quantity_idx = header_idx.get("Total Quantity Used")
 
-    if None in [product_idx, packages_idx, size_idx, quantity_idx, remaining_packages_idx, remaining_quantity_idx]:
+    if None in [product_idx, packages_idx, size_idx, quantity_idx]:
         return jsonify({"status": "error", "message": "Required columns missing"}), 400
 
     def parse_numeric(value):
@@ -1587,8 +1633,8 @@ def add_stock():
         return round(v, 2)
 
     for i, row in enumerate(rows, start=2):
-        if len(row) <= max(product_idx, packages_idx, size_idx, quantity_idx, remaining_packages_idx, remaining_quantity_idx):
-            row += [""] * (max(product_idx, packages_idx, size_idx, quantity_idx, remaining_packages_idx, remaining_quantity_idx) - len(row) + 1)
+        if len(row) <= max(product_idx, packages_idx, size_idx, quantity_idx):
+            row += [""] * (max(product_idx, packages_idx, size_idx, quantity_idx) - len(row) + 1)
 
         if row[product_idx] == product:
             current_packages = parse_numeric(row[packages_idx])
@@ -1600,21 +1646,12 @@ def add_stock():
             unit = row[unit_idx] if unit_idx is not None and row[unit_idx] else ""
             total_quantity = fmt(new_packages * package_size)
             row[quantity_idx] = f"{total_quantity} {unit}".strip()
-            # Keep used amounts
-            total_packages_used = parse_numeric(row[used_packages_idx]) if used_packages_idx is not None else 0
-            total_quantity_used = parse_numeric(row[used_quantity_idx]) if used_quantity_idx is not None else 0
-
-            # Remaining = Stocked − Used
-            row[remaining_packages_idx] = fmt(new_packages - total_packages_used)
-            row[remaining_quantity_idx] = f"{fmt(total_quantity - total_quantity_used)} {unit}".strip()
 
 
             # Update all affected cells
             updates = [
                 (packages_idx, new_packages),
-                (quantity_idx, row[quantity_idx]),
-                (remaining_packages_idx, row[remaining_packages_idx]),
-                (remaining_quantity_idx, row[remaining_quantity_idx])
+                (quantity_idx, row[quantity_idx])
             ]
 
             for idx, val in updates:
@@ -1636,8 +1673,6 @@ def add_stock():
         new_row[unit_idx] = unit_input
     total_quantity = fmt(amount * package_size_input)
     new_row[quantity_idx] = f"{total_quantity} {unit_input}".strip()
-    new_row[remaining_packages_idx] = fmt(amount)
-    new_row[remaining_quantity_idx] = f"{total_quantity} {unit_input}".strip()
 
     sheet.values().append(
         spreadsheetId=CHEMICALS_SHEET_ID,
@@ -1677,11 +1712,9 @@ def delete_stock():
     packages_idx = header_idx.get("Total Packages Stocked")
     size_idx = header_idx.get("Package Size Per")
     quantity_idx = header_idx.get("Total Quantity Stocked")
-    remaining_packages_idx = header_idx.get("Total Packages Remaining")
-    remaining_quantity_idx = header_idx.get("Total Quantity Remaining")
     unit_idx = header_idx.get("Scientific Unit Type")
 
-    if None in [product_idx, packages_idx, size_idx, quantity_idx, remaining_packages_idx, remaining_quantity_idx]:
+    if None in [product_idx, packages_idx, size_idx, quantity_idx]:
         return jsonify({"status": "error", "message": "Required columns missing"}), 400
 
     def parse_numeric(value):
@@ -1698,8 +1731,8 @@ def delete_stock():
             return chr(65 + mod)
 
     for i, row in enumerate(rows, start=2):
-        if len(row) <= max(product_idx, packages_idx, size_idx, quantity_idx, remaining_packages_idx, remaining_quantity_idx):
-            row += [""] * (max(product_idx, packages_idx, size_idx, quantity_idx, remaining_packages_idx, remaining_quantity_idx) - len(row) + 1)
+        if len(row) <= max(product_idx, packages_idx, size_idx, quantity_idx):
+            row += [""] * (max(product_idx, packages_idx, size_idx, quantity_idx) - len(row) + 1)
 
         if row[product_idx] == product:
             current_packages = parse_numeric(row[packages_idx])
@@ -1710,17 +1743,10 @@ def delete_stock():
             unit = row[unit_idx] if unit_idx is not None and row[unit_idx] else ""
             total_quantity = new_packages * package_size
             row[quantity_idx] = f"{total_quantity} {unit}".strip()
-            total_packages_used = parse_numeric(row[header_idx.get("Total Packages Used", 0)])
-            total_quantity_used = parse_numeric(row[header_idx.get("Total Quantity Used", 0)])
-
-            row[remaining_packages_idx] = str(new_packages - total_packages_used)
-            row[remaining_quantity_idx] = f"{total_quantity - total_quantity_used} {unit}".strip()
-
+            
             updates = [
                 (packages_idx, new_packages),
-                (quantity_idx, row[quantity_idx]),
-                (remaining_packages_idx, row[remaining_packages_idx]),
-                (remaining_quantity_idx, row[remaining_quantity_idx])
+                (quantity_idx, row[quantity_idx])
             ]
             for idx, val in updates:
                 sheet.values().update(
