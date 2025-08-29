@@ -1564,15 +1564,9 @@ def reset_usage_for_formula(formula_id):
             row[packages_used_idx] = "0"
             sheet.values().update(
                 spreadsheetId=CHEMICALS_SHEET_ID,
-                range=f"Inventory!{chr(65 + used_idx)}{i}",
+                range=f"{INVENTORY}!{chr(65 + used_idx)}{i}:{chr(65 + packages_used_idx)}{i}",
                 valueInputOption="RAW",
-                body={"values": [[row[used_idx]]]}
-            ).execute()
-            sheet.values().update(
-                spreadsheetId=CHEMICALS_SHEET_ID,
-                range=f"Inventory!{chr(65 + packages_used_idx)}{i}",
-                valueInputOption="RAW",
-                body={"values": [[row[packages_used_idx]]]}
+                body={"values": [[row[used_idx], row[packages_used_idx]]]}
             ).execute()
             updated = True
             break
