@@ -1548,23 +1548,31 @@ def reset_usage_for_formula(formula_id):
     try:
         name_idx = headers.index("Product Name")
         used_idx = headers.index("Total Quantity Used")
+        packages_used_idx = headers.index("Total Packages Used")
     except ValueError:
         return jsonify({"status": "error", "message": "Required columns missing"}), 400
 
     updated = False
     for i, row in enumerate(rows, start=2):
         # Extend row if too short
-        if len(row) <= max(name_idx, used_idx):
+        if len(row) <= max(name_idx, used_idx, packages_used_idx):
             row += [''] * (max(name_idx, used_idx) - len(row) + 1)
 
         if row[name_idx].strip() == formula_id:
-            # Reset only the usage column
+            # Reset usage and packages used
             row[used_idx] = "0"
+            row[packages_used_idx] = "0"
             sheet.values().update(
                 spreadsheetId=CHEMICALS_SHEET_ID,
-                range=f"Inventory!{chr(65 + used_idx)}{i}",  # e.g., "O2"
+                range=f"Inventory!{chr(65 + used_idx)}{i}",
                 valueInputOption="RAW",
                 body={"values": [[row[used_idx]]]}
+            ).execute()
+            sheet.values().update(
+                spreadsheetId=CHEMICALS_SHEET_ID,
+                range=f"Inventory!{chr(65 + packages_used_idx)}{i}",
+                valueInputOption="RAW",
+                body={"values": [[row[packages_used_idx]]]}
             ).execute()
             updated = True
             break
